@@ -88,33 +88,14 @@ var cancellableOrders = await repository.FindAsync(new CancellableOrderSpecifica
 var spec = new MinimumOrderValueSpecification(100) & new CancellableOrderSpecification();
 ```
 
-### Business Rule Pattern
-Encapsulated business rules for **validation and enforcement** with clear error messages.
+### Factory Pattern
+Encapsulated object creation.
 ```csharp
-public interface IBusinessRule
+public static Order Create(CustomerId customerId, Address address)
 {
-    bool IsBroken();
-    string Message { get; }
-    string Code => "BUSINESS_RULE_VIOLATION";
-}
-
-public class OrderMustHaveAtLeastOneItemRule : IBusinessRule
-{
-    private readonly int _itemCount;
-    
-    public OrderMustHaveAtLeastOneItemRule(int itemCount) => _itemCount = itemCount;
-    
-    public bool IsBroken() => _itemCount < 1;
-    public string Message => "Order must have at least one item before submission.";
-    public string Code => "ORDER_EMPTY";
-}
-
-// Usage in Aggregate Root
-public void Submit()
-{
-    CheckRule(new OrderMustHaveAtLeastOneItemRule(_orderItems.Count));
-    CheckRule(new OrderMustBeInDraftStatusRule(Status));
-    // ... proceed with submission
+    var order = new Order { ... };
+    order.RaiseDomainEvent(new OrderCreatedDomainEvent(...));
+    return order;
 }
 ```
 
@@ -130,20 +111,9 @@ public class OrderStatus : Enumeration
 }
 ```
 
-### Factory Pattern
-Encapsulated object creation.
-```csharp
-public static Order Create(CustomerId customerId, Address address)
-{
-    var order = new Order { ... };
-    order.RaiseDomainEvent(new OrderCreatedDomainEvent(...));
-    return order;
-}
-```
+## Integration Between Bounded Contexts (Context Mapping)
 
-## 🔄 Integration Between Bounded Contexts (Context Mapping)
-
-### Event Flow: Order → Payment
+### Published Language + Anti-Corruption Layer
 
 1. **Order Submitted**: Order service raises `OrderSubmittedDomainEvent`
 2. **Domain Event Handler**: Converts to `OrderSubmittedIntegrationEvent`
@@ -171,31 +141,6 @@ public static Order Create(CustomerId customerId, Address address)
 │       ▼         │                    │                 │
 │ Status = Paid   │                    │                 │
 └─────────────────┘                    └─────────────────┘
-```
-## Project Overview
-
-This solution demonstrates a microservices architecture with two bounded contexts:
-- **Order Service** - Manages customer orders
-- **Payment Service** - Handles payment processing
-
-```
-DDD/
-├── src/
-│   ├── BuildingBlocks/          # Shared DDD building blocks
-│   │   ├── BuildingBlocks.Domain/
-│   │   └── BuildingBlocks.Integration/
-│   └── Services/
-│       ├── Order/               # Order Bounded Context
-│       │   ├── Order.Domain/
-│       │   ├── Order.Application/
-│       │   ├── Order.Infrastructure/
-│       │   └── Order.API/
-│       └── Payment/             # Payment Bounded Context
-│           ├── Payment.Domain/
-│           ├── Payment.Application/
-│           ├── Payment.Infrastructure/
-│           └── Payment.API/
-└── DDD.sln
 ```
 
 ## Setup

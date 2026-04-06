@@ -13,6 +13,21 @@ namespace Order.Domain.Services;
 /// 2. Operates on multiple aggregates or external data
 /// 3. Stateless
 /// 4. Named using Ubiquitous Language
+/// 
+/// From Eric Evans DDD book:
+/// Many domain or application **SERVICES** are built on top of populations of **ENTITIES** and **VALUE OBJECTS**, 
+/// behaving like scripts that organize the domain’s potential to actually get things done. 
+/// **ENTITIES** and **VALUE OBJECTS** are often too fine-grained to provide convenient access 
+/// to the capabilities of the domain layer, which is where a very fine line between
+/// the domain layer and the application layer appears.
+/// For example, if a banking application can convert and export transactions into a spreadsheet file for analysis, 
+/// that export is an application **SERVICE** because concepts like file formats have no meaning in the banking domain and involve no business rules. 
+/// In contrast, a feature that transfers funds from one account to another is a domain **SERVICE** 
+/// because it embeds significant business rules (such as crediting and debiting the appropriate accounts) 
+/// and because “funds transfer” is a meaningful banking concept. In this case, the **SERVICE** itself does little work; 
+/// instead, it asks the two **Account** objects to perform most of the behavior.
+///  Placing the transfer operation on a single **Account** object would be awkward, 
+/// however, because the operation involves two accounts and enforces global rules.
 /// </summary>
 public interface IOrderPricingService : IDomainService
 {
