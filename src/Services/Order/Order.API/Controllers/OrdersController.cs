@@ -1,3 +1,4 @@
+using BuildingBlocks.Domain;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Order.Application.Commands;
@@ -194,6 +195,38 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             return Ok();
         }
         catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("{targetOrderId:guid}/consolidate/{sourceOrderId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Consolidate(
+        Guid targetOrderId,
+        Guid sourceOrderId,
+        CancellationToken cancellationToken)
+    {
+        var command = new ConsolidateOrdersCommand
+        {
+            SourceOrderId = sourceOrderId,
+            TargetOrderId = targetOrderId
+        };
+
+        try
+        {
+            var result = await mediator.Send(command, cancellationToken);
+
+            if (!result)
+                return NotFound();
+
+            logger.LogInformation("Order {SourceOrderId} consolidated into {TargetOrderId}", sourceOrderId, targetOrderId);
+
+            return Ok();
+        }
+        catch (DomainException ex)
         {
             return BadRequest(ex.Message);
         }

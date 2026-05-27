@@ -4,6 +4,7 @@ using Order.Application.AntiCorruption;
 using Order.Application.Commands;
 using Order.Application.IntegrationEventHandlers;
 using Order.Domain.Repositories;
+using Order.Domain.Services;
 using Order.Infrastructure.Messaging;
 using Order.Infrastructure.Persistence;
 using Order.Infrastructure.Repositories;
@@ -27,6 +28,9 @@ builder.Services.AddMediatR(cfg =>
 
 // Repository
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+// Domain Services
+builder.Services.AddScoped<IOrderConsolidationService, OrderConsolidationService>();
 
 // Anti-Corruption Layer
 builder.Services.AddScoped<ExternalOrderTranslator>();

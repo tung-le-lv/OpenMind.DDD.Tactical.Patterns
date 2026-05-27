@@ -18,7 +18,7 @@ namespace Order.Domain.Aggregates.OrderAggregate;
 /// </summary>
 public class Order : AggregateRoot<OrderId>
 {
-    private List<OrderItem> _orderItems = null!;
+    private List<OrderItem> _orderItems;
 
     public CustomerId CustomerId { get; private set; }
     public Address ShippingAddress { get; private set; }
