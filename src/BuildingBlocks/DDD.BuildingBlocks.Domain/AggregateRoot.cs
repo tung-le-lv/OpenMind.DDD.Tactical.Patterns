@@ -11,8 +11,7 @@ namespace BuildingBlocks.Domain;
 /// 3. Keep Aggregates small - design around consistency boundaries
 /// 4. Protect invariants within Aggregate boundaries
 /// </summary>
-public abstract class AggregateRoot<TId> : Entity<TId>, IAggregateRoot
-    where TId : notnull
+public abstract class AggregateRoot<TId> : Entity<TId>, IAggregateRoot where TId : notnull
 {
     /// <summary>
     /// Version number for optimistic concurrency control.

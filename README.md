@@ -62,12 +62,25 @@ public interface IOrderRepository : IRepository<Order, OrderId>
 ```
 
 ### Domain Services
-Stateless operations that don't belong to entities.
+1. Contains domain logic that doesn't naturally fit in an Entity or Value Object
+2. Operates on multiple aggregates or external data
+3. Stateless
+4. Named using Ubiquitous Language
+
 ```csharp
-public interface IPaymentProcessingService : IDomainService
+public interface IOrderConsolidationService : IDomainService
 {
-    PaymentValidationResult ValidatePayment(Payment payment);
-    Money CalculateProcessingFee(Money amount, PaymentMethod method);
+    /// <summary>
+    /// Moves all items from <paramref name="sourceOrder"/> into <paramref name="targetOrder"/>,
+    /// then cancels the source order.
+    ///
+    /// Preconditions enforced here (not in either aggregate, because neither owns the other):
+    ///  - Both orders must belong to the same customer
+    ///  - Both orders must be in Draft status
+    ///  - Both orders must use the same currency
+    ///  - The combined item count must not exceed the domain maximum
+    /// </summary>
+    void Consolidate(Aggregates.OrderAggregate.Order sourceOrder, Aggregates.OrderAggregate.Order targetOrder);
 }
 ```
 
