@@ -6,8 +6,10 @@ namespace Order.Domain.ValueObjects;
 /// Value Object representing Money in the Order domain.
 ///
 /// Supple Design patterns applied:
-/// - Standalone Class: depends only on ValueObject; no domain imports needed to reason about it
-/// - Closure of Operations: every arithmetic operation returns Money → Money is closed under its operations
+/// - Standalone Class: depends only on ValueObject and Percentage — both standalone value objects
+///   with no aggregate or service dependencies. No external domain knowledge is needed to reason about it.
+/// - Closure of Operations: every arithmetic operation returns Money → Money is closed under its operations.
+///   ApplyDiscount(Percentage) → Money demonstrates closure between two standalone types.
 /// - Side-Effect-Free Functions (Evans): Add, Subtract, Multiply, ApplyDiscount are the canonical
 ///   demonstration. Each takes input values and returns a NEW Money instance — nothing is mutated.
 ///   Because this Value Object is immutable, ALL of its operations are structurally side-effect-free:
@@ -78,15 +80,10 @@ public class Money : ValueObject
     }
 
     /// Reduces this amount by a percentage and returns a new Money — result stays a Money.
-    public Money ApplyDiscount(decimal percentage)
-    {
-        if (percentage is < 0 or > 100)
-        {
-            throw new ArgumentOutOfRangeException(nameof(percentage), "Discount percentage must be between 0 and 100.");
-        }
-        
-        return new Money(Amount * (1 - percentage / 100m), Currency);
-    }
+    /// Closure of Operations: Money.ApplyDiscount(Percentage) → Money.
+    /// The Percentage type already enforces the 0–100 invariant, so Money needs no guard here.
+    public Money ApplyDiscount(Percentage discount)
+        => new(Amount - discount.ApplyTo(Amount), Currency);
 
     public static Money operator +(Money left, Money right) => left.Add(right);
     public static Money operator -(Money left, Money right) => left.Subtract(right);

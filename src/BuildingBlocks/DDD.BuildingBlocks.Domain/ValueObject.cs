@@ -5,6 +5,8 @@ namespace BuildingBlocks.Domain;
 /// A Value Object is defined by its attributes rather than identity (Eric Evans, DDD).
 /// Value Objects are immutable - once created, their state cannot change.
 /// Two Value Objects are equal if all their attributes are equal.
+/// 
+/// In .NET, we prefer to use record type or strongly type for value object.
 /// </summary>
 public abstract class ValueObject : IEquatable<ValueObject>
 {

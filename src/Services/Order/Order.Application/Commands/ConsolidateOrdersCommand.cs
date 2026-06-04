@@ -1,4 +1,3 @@
-using BuildingBlocks.Domain;
 using MediatR;
 using Order.Domain.Repositories;
 using Order.Domain.Services;

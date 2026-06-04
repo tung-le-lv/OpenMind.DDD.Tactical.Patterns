@@ -33,7 +33,7 @@ public class ApplyPromotionCommandHandler(IOrderRepository orderRepository)
         //   2. Validates the projected outcome
         //   3. Writes the computed discounts to each item (state mutation)
         // The handler knows nothing about how discounts are calculated.
-        order.ApplyPromotion(request.DiscountPercentage, request.MinimumOrderValueAfterDiscount);
+        order.ApplyPromotion(Percentage.Of(request.DiscountPercentage), request.MinimumOrderValueAfterDiscount);
 
         orderRepository.Update(order);
         await orderRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);

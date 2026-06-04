@@ -2,18 +2,11 @@ using System.Linq.Expressions;
 
 namespace BuildingBlocks.Domain.Specifications;
 
-internal class NotSpecification<T> : Specification<T>
+internal class NotSpecification<T>(Specification<T> specification) : Specification<T>
 {
-    private readonly Specification<T> _specification;
-
-    public NotSpecification(Specification<T> specification)
-    {
-        _specification = specification;
-    }
-
     public override Expression<Func<T, bool>> ToExpression()
     {
-        var expression = _specification.ToExpression();
+        var expression = specification.ToExpression();
         var parameter = Expression.Parameter(typeof(T));
         var negated = Expression.Not(Expression.Invoke(expression, parameter));
 

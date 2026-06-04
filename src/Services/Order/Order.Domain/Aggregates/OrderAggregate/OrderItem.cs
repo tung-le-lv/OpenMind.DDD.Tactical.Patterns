@@ -78,10 +78,10 @@ public class OrderItem : Entity<OrderItemId>
     /// Computes the absolute discount amount that a percentage promotion would produce
     /// for this item, without touching any field. Used by Order.ApplyPromotion to
     /// calculate per-item discounts before committing any state changes.
-    internal Money CalculateDiscountAmount(decimal percentage)
+    internal Money CalculateDiscountAmount(Percentage discount)
     {
         var gross = UnitPrice.Multiply(Quantity);
-        return gross - gross.ApplyDiscount(percentage);
+        return gross - gross.ApplyDiscount(discount);
     }
 
     // ── Command methods (side-effecting, clearly separated from functions above) ─

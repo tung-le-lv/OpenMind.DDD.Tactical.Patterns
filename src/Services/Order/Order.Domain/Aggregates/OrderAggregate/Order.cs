@@ -197,16 +197,16 @@ public class Order : AggregateRoot<OrderId>
     ///     - SetModified and Emit record the transition
     ///
     /// If Phase 1-2 throws, the order is completely unchanged — no partial state to roll back.
-    public void ApplyPromotion(decimal discountPercentage, decimal minimumOrderValueAfterDiscount = 0m)
+    public void ApplyPromotion(Percentage discount, decimal minimumOrderValueAfterDiscount = 0m)
     {
         CheckRule(new OrderMustBeInDraftStatusRule(Status));
         CheckRule(new OrderMustHaveAtLeastOneItemRule(_orderItems.Count));
 
         // Phase 1: Side effect free function. Pure computation — no state touched.
         // The method ApplyDiscount or CalculateDiscountAmount (containing algorithm) can be tested independently
-        var projectedTotal = TotalAmount.ApplyDiscount(discountPercentage);
+        var projectedTotal = TotalAmount.ApplyDiscount(discount);
         var discountsPerItem = _orderItems
-            .Select(item => (item, discount: item.CalculateDiscountAmount(discountPercentage)))
+            .Select(item => (item, discount: item.CalculateDiscountAmount(discount)))
             .ToList();
 
         // Phase 2: validate the computed results — no mutation.
@@ -214,13 +214,13 @@ public class Order : AggregateRoot<OrderId>
 
         // Phase 3: Apply state change
         var originalTotal = TotalAmount;
-        foreach (var (item, discount) in discountsPerItem)
+        foreach (var (item, discountAmount) in discountsPerItem)
         {
-            item.ApplyDiscount(discount);
+            item.ApplyDiscount(discountAmount);
         }
 
         SetModified();
-        Emit(new PromotionAppliedDomainEvent(Id, discountPercentage, originalTotal.Amount, projectedTotal.Amount, Currency));
+        Emit(new PromotionAppliedDomainEvent(Id, discount.Value, originalTotal.Amount, projectedTotal.Amount, Currency));
 
         Debug.Assert(
             TotalAmount.IsGreaterThanOrEqualTo(Money.Zero(Currency)),
