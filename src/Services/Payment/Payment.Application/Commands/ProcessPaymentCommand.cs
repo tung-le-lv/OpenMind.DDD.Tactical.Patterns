@@ -2,7 +2,4 @@ using MediatR;
 
 namespace Payment.Application.Commands;
 
-public record ProcessPaymentCommand : IRequest<bool>
-{
-    public Guid PaymentId { get; init; }
-}
+public record ProcessPaymentCommand(Guid PaymentId) : IRequest<bool>;

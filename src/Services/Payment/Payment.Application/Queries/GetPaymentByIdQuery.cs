@@ -3,7 +3,4 @@ using Payment.Application.DTOs;
 
 namespace Payment.Application.Queries;
 
-public record GetPaymentByIdQuery : IRequest<PaymentDto?>
-{
-    public Guid PaymentId { get; init; }
-}
+public record GetPaymentByIdQuery(Guid PaymentId) : IRequest<PaymentDto?>;

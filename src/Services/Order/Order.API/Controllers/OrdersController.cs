@@ -20,62 +20,52 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid orderId, CancellationToken cancellationToken)
     {
-        var query = new GetOrderByIdQuery { OrderId = orderId };
-        var result = await mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(new GetOrderByIdQuery(orderId), cancellationToken);
 
         if (result == null)
             return NotFound();
 
         return Ok(result);
     }
-    
+
     [HttpGet("customer/{customerId:guid}")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCustomer(Guid customerId, CancellationToken cancellationToken)
     {
-        var query = new GetOrdersByCustomerQuery { CustomerId = customerId };
-        var result = await mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(new GetOrdersByCustomerQuery(customerId), cancellationToken);
         return Ok(result);
     }
-    
+
     [HttpGet("status/{status}")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByStatus(string status, CancellationToken cancellationToken)
     {
-        var query = new GetOrdersByStatusQuery { Status = status };
-        var result = await mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(new GetOrdersByStatusQuery(status), cancellationToken);
         return Ok(result);
     }
-    
+
     [HttpGet("pending")]
     [ProducesResponseType(typeof(IReadOnlyList<OrderDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPending(CancellationToken cancellationToken)
     {
-        var query = new GetPendingOrdersQuery();
-        var result = await mediator.Send(query, cancellationToken);
+        var result = await mediator.Send(new GetPendingOrdersQuery(), cancellationToken);
         return Ok(result);
     }
-    
+
     [HttpPost]
     [ProducesResponseType(typeof(Guid), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateOrderDto request, CancellationToken cancellationToken)
     {
-        var command = new CreateOrderCommand
-        {
-            CustomerId = request.CustomerId,
-            ShippingAddress = request.ShippingAddress,
-            Currency = request.Currency,
-            Notes = request.Notes
-        };
-
-        var orderId = await mediator.Send(command, cancellationToken);
+        var orderId = await mediator.Send(
+            new CreateOrderCommand(request.CustomerId, request.ShippingAddress, request.Currency, request.Notes),
+            cancellationToken);
 
         logger.LogInformation("Order {OrderId} created", orderId);
 
         return CreatedAtAction(nameof(GetById), new { orderId }, orderId);
     }
-    
+
     [HttpPost("{orderId:guid}/items")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -85,42 +75,29 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         [FromBody] AddOrderItemDto request,
         CancellationToken cancellationToken)
     {
-        var command = new AddOrderItemCommand
-        {
-            OrderId = orderId,
-            ProductId = request.ProductId,
-            ProductName = request.ProductName,
-            UnitPrice = request.UnitPrice,
-            Quantity = request.Quantity
-        };
-
-        var result = await mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(
+            new AddOrderItemCommand(orderId, request.ProductId, request.ProductName, request.UnitPrice, request.Quantity),
+            cancellationToken);
 
         if (!result)
             return NotFound();
 
         return Ok();
     }
-    
+
     [HttpDelete("{orderId:guid}/items/{itemId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RemoveItem(Guid orderId, Guid itemId, CancellationToken cancellationToken)
     {
-        var command = new RemoveOrderItemCommand
-        {
-            OrderId = orderId,
-            ItemId = itemId
-        };
-
-        var result = await mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(new RemoveOrderItemCommand(orderId, itemId), cancellationToken);
 
         if (!result)
             return NotFound();
 
         return Ok();
     }
-    
+
     [HttpPut("{orderId:guid}/address")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -129,31 +106,23 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         [FromBody] AddressDto request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateShippingAddressCommand
-        {
-            OrderId = orderId,
-            NewAddress = request
-        };
-
-        var result = await mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(new UpdateShippingAddressCommand(orderId, request), cancellationToken);
 
         if (!result)
             return NotFound();
 
         return Ok();
     }
-    
+
     [HttpPost("{orderId:guid}/submit")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Submit(Guid orderId, CancellationToken cancellationToken)
     {
-        var command = new SubmitOrderCommand { OrderId = orderId };
-
         try
         {
-            var result = await mediator.Send(command, cancellationToken);
+            var result = await mediator.Send(new SubmitOrderCommand(orderId), cancellationToken);
 
             if (!result)
                 return NotFound();
@@ -167,7 +136,7 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             return BadRequest(ex.Message);
         }
     }
-    
+
     [HttpPost("{orderId:guid}/cancel")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -177,15 +146,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         [FromBody] CancelOrderRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new CancelOrderCommand
-        {
-            OrderId = orderId,
-            Reason = request.Reason
-        };
-
         try
         {
-            var result = await mediator.Send(command, cancellationToken);
+            var result = await mediator.Send(new CancelOrderCommand(orderId, request.Reason), cancellationToken);
 
             if (!result)
                 return NotFound();
@@ -209,15 +172,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         Guid sourceOrderId,
         CancellationToken cancellationToken)
     {
-        var command = new ConsolidateOrdersCommand
-        {
-            SourceOrderId = sourceOrderId,
-            TargetOrderId = targetOrderId
-        };
-
         try
         {
-            var result = await mediator.Send(command, cancellationToken);
+            var result = await mediator.Send(new ConsolidateOrdersCommand(sourceOrderId, targetOrderId), cancellationToken);
 
             if (!result)
                 return NotFound();
@@ -239,26 +196,22 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         [FromBody] ImportExternalOrderRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new ImportExternalOrderCommand
-        {
-            ExternalOrderId = request.ExternalOrderId,
-            CustomerId = request.CustomerId,
-            CustomerName = request.CustomerName,
-            ShippingStreet = request.ShippingStreet,
-            ShippingCity = request.ShippingCity,
-            ShippingState = request.ShippingState,
-            ShippingCountry = request.ShippingCountry,
-            ShippingZipCode = request.ShippingZipCode,
-            Currency = request.Currency,
-            Items = request.Items.Select(i => new ImportExternalOrderItemCommand
-            {
-                ProductId = i.ProductId,
-                ProductName = i.ProductName,
-                UnitPrice = i.UnitPrice,
-                Quantity = i.Quantity
-            }).ToList(),
-            Notes = request.Notes
-        };
+        var command = new ImportExternalOrderCommand(
+            request.ExternalOrderId,
+            request.CustomerId,
+            request.CustomerName,
+            request.ShippingStreet,
+            request.ShippingCity,
+            request.ShippingState,
+            request.ShippingCountry,
+            request.ShippingZipCode,
+            request.Currency,
+            request.Items.Select(i => new ImportExternalOrderItemCommand(
+                i.ProductId,
+                i.ProductName,
+                i.UnitPrice,
+                i.Quantity)).ToList(),
+            request.Notes);
 
         var orderId = await mediator.Send(command, cancellationToken);
 
@@ -281,12 +234,10 @@ public record ImportExternalOrderRequest(
     string ShippingZipCode,
     string Currency,
     List<ImportExternalOrderItemRequest> Items,
-    string? Notes = null
-);
+    string? Notes = null);
 
 public record ImportExternalOrderItemRequest(
     Guid ProductId,
     string ProductName,
     decimal UnitPrice,
-    int Quantity
-);
+    int Quantity);

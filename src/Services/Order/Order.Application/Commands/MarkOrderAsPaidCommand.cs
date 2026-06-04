@@ -4,11 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record MarkOrderAsPaidCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public DateTime PaidAt { get; init; }
-}
+public record MarkOrderAsPaidCommand(Guid OrderId, DateTime PaidAt) : IRequest<bool>;
 
 public class MarkOrderAsPaidCommandHandler(IOrderRepository orderRepository) : IRequestHandler<MarkOrderAsPaidCommand, bool>
 {

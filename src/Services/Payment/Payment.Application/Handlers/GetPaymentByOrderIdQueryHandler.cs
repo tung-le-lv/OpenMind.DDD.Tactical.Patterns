@@ -20,29 +20,25 @@ public class GetPaymentByOrderIdQueryHandler(IPaymentRepository paymentRepositor
         return MapToDto(payment);
     }
 
-    private static PaymentDto MapToDto(Domain.Aggregates.PaymentAggregate.Payment payment) => new()
-    {
-        Id = payment.Id.Value,
-        OrderId = payment.OrderId.Value,
-        CustomerId = payment.CustomerId.Value,
-        Amount = payment.Amount.Amount,
-        Currency = payment.Amount.Currency,
-        Status = payment.Status.Name,
-        Method = payment.Method.Name,
-        CardDetails = payment.CardDetails != null
-            ? new CardDetailsDto
-            {
-                Last4Digits = payment.CardDetails.Last4Digits,
-                CardType = payment.CardDetails.CardType,
-                ExpiryMonth = payment.CardDetails.ExpiryMonth,
-                ExpiryYear = payment.CardDetails.ExpiryYear,
-                CardHolderName = payment.CardDetails.CardHolderName
-            }
+    private static PaymentDto MapToDto(Domain.Aggregates.PaymentAggregate.Payment payment) => new(
+        payment.Id.Value,
+        payment.OrderId.Value,
+        payment.CustomerId.Value,
+        payment.Amount.Amount,
+        payment.Amount.Currency,
+        payment.Status.Name,
+        payment.Method.Name,
+        payment.CardDetails != null
+            ? new CardDetailsDto(
+                payment.CardDetails.Last4Digits,
+                payment.CardDetails.CardType,
+                payment.CardDetails.ExpiryMonth,
+                payment.CardDetails.ExpiryYear,
+                payment.CardDetails.CardHolderName)
             : null,
-        TransactionId = payment.TransactionId,
-        FailureReason = payment.FailureReason,
-        CreatedAt = payment.CreatedAt,
-        ProcessedAt = payment.ProcessedAt,
-        CompletedAt = payment.CompletedAt
-    };
+        payment.TransactionId,
+        payment.FailureReason,
+        payment.CreatedAt,
+        payment.ProcessedAt,
+        payment.CompletedAt);
 }

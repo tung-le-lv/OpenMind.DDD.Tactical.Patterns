@@ -4,12 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record UpdateOrderItemQuantityCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public Guid ItemId { get; init; }
-    public int NewQuantity { get; init; }
-}
+public record UpdateOrderItemQuantityCommand(Guid OrderId, Guid ItemId, int NewQuantity) : IRequest<bool>;
 
 public class UpdateOrderItemQuantityCommandHandler(IOrderRepository orderRepository) : IRequestHandler<UpdateOrderItemQuantityCommand, bool>
 {

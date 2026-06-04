@@ -21,13 +21,7 @@ public class PaymentFailedIntegrationEventHandler(
             @event.OrderId,
             @event.Reason);
 
-        var command = new MarkOrderPaymentFailedCommand
-        {
-            OrderId = @event.OrderId,
-            Reason = @event.Reason
-        };
-
-        await mediator.Send(command, cancellationToken);
+        await mediator.Send(new MarkOrderPaymentFailedCommand(@event.OrderId, @event.Reason), cancellationToken);
 
         logger.LogInformation("Order {OrderId} marked as payment failed", @event.OrderId);
     }

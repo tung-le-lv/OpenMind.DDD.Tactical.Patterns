@@ -4,11 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record CancelOrderCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public string Reason { get; init; } = string.Empty;
-}
+public record CancelOrderCommand(Guid OrderId, string Reason) : IRequest<bool>;
 
 public class CancelOrderCommandHandler(IOrderRepository orderRepository) : IRequestHandler<CancelOrderCommand, bool>
 {

@@ -17,19 +17,18 @@ public class GetPaymentsByCustomerQueryHandler(IPaymentRepository paymentReposit
         return payments.Select(MapToDto).ToList();
     }
 
-    private static PaymentDto MapToDto(Domain.Aggregates.PaymentAggregate.Payment payment) => new()
-    {
-        Id = payment.Id.Value,
-        OrderId = payment.OrderId.Value,
-        CustomerId = payment.CustomerId.Value,
-        Amount = payment.Amount.Amount,
-        Currency = payment.Amount.Currency,
-        Status = payment.Status.Name,
-        Method = payment.Method.Name,
-        TransactionId = payment.TransactionId,
-        FailureReason = payment.FailureReason,
-        CreatedAt = payment.CreatedAt,
-        ProcessedAt = payment.ProcessedAt,
-        CompletedAt = payment.CompletedAt
-    };
+    private static PaymentDto MapToDto(Domain.Aggregates.PaymentAggregate.Payment payment) => new(
+        payment.Id.Value,
+        payment.OrderId.Value,
+        payment.CustomerId.Value,
+        payment.Amount.Amount,
+        payment.Amount.Currency,
+        payment.Status.Name,
+        payment.Method.Name,
+        null,
+        payment.TransactionId,
+        payment.FailureReason,
+        payment.CreatedAt,
+        payment.ProcessedAt,
+        payment.CompletedAt);
 }

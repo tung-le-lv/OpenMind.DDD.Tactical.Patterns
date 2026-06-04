@@ -4,10 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record SubmitOrderCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-}
+public record SubmitOrderCommand(Guid OrderId) : IRequest<bool>;
 
 public class SubmitOrderCommandHandler(IOrderRepository orderRepository) : IRequestHandler<SubmitOrderCommand, bool>
 {

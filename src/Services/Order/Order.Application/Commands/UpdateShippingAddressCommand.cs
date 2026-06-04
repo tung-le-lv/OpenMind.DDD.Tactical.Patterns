@@ -5,11 +5,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record UpdateShippingAddressCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public AddressDto NewAddress { get; init; } = null!;
-}
+public record UpdateShippingAddressCommand(Guid OrderId, AddressDto NewAddress) : IRequest<bool>;
 
 public class UpdateShippingAddressCommandHandler(IOrderRepository orderRepository) : IRequestHandler<UpdateShippingAddressCommand, bool>
 {

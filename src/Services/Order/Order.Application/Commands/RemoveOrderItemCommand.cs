@@ -4,11 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record RemoveOrderItemCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public Guid ItemId { get; init; }
-}
+public record RemoveOrderItemCommand(Guid OrderId, Guid ItemId) : IRequest<bool>;
 
 public class RemoveOrderItemCommandHandler(IOrderRepository orderRepository) : IRequestHandler<RemoveOrderItemCommand, bool>
 {

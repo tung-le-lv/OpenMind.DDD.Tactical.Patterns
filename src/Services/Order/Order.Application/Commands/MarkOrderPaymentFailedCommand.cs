@@ -4,11 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record MarkOrderPaymentFailedCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public string Reason { get; init; } = string.Empty;
-}
+public record MarkOrderPaymentFailedCommand(Guid OrderId, string Reason) : IRequest<bool>;
 
 public class MarkOrderPaymentFailedCommandHandler(IOrderRepository orderRepository) : IRequestHandler<MarkOrderPaymentFailedCommand, bool>
 {

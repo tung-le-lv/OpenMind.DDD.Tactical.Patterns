@@ -21,13 +21,7 @@ public class PaymentCompletedIntegrationEventHandler(
             @event.OrderId,
             @event.PaymentId);
 
-        var command = new MarkOrderAsPaidCommand
-        {
-            OrderId = @event.OrderId,
-            PaidAt = @event.PaidAt
-        };
-
-        await mediator.Send(command, cancellationToken);
+        await mediator.Send(new MarkOrderAsPaidCommand(@event.OrderId, @event.PaidAt), cancellationToken);
 
         logger.LogInformation("Order {OrderId} marked as paid", @event.OrderId);
     }

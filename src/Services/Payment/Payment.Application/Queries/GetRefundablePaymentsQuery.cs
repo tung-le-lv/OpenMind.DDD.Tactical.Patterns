@@ -10,11 +10,11 @@ namespace Payment.Application.Queries;
 /// </summary>
 public record GetRefundablePaymentsQuery : IRequest<IReadOnlyList<PaymentDto>>;
 
-public class GetRefundablePaymentsQueryHandler(IPaymentRepository paymentRepository) 
+public class GetRefundablePaymentsQueryHandler(IPaymentRepository paymentRepository)
     : IRequestHandler<GetRefundablePaymentsQuery, IReadOnlyList<PaymentDto>>
 {
     public async Task<IReadOnlyList<PaymentDto>> Handle(
-        GetRefundablePaymentsQuery request, 
+        GetRefundablePaymentsQuery request,
         CancellationToken cancellationToken)
     {
         var payments = await paymentRepository.GetRefundablePaymentsAsync(cancellationToken);
@@ -22,26 +22,23 @@ public class GetRefundablePaymentsQueryHandler(IPaymentRepository paymentReposit
         return payments.Select(MapToDto).ToList();
     }
 
-    private static PaymentDto MapToDto(Domain.Aggregates.PaymentAggregate.Payment payment) => new()
-    {
-        Id = payment.Id.Value,
-        OrderId = payment.OrderId.Value,
-        CustomerId = payment.CustomerId.Value,
-        Amount = payment.Amount.Amount,
-        Currency = payment.Amount.Currency,
-        Status = payment.Status.Name,
-        Method = payment.Method.Name,
-        CardDetails = payment.CardDetails != null ? new CardDetailsDto
-        {
-            Last4Digits = payment.CardDetails.Last4Digits,
-            CardType = payment.CardDetails.CardType,
-            ExpiryMonth = payment.CardDetails.ExpiryMonth,
-            ExpiryYear = payment.CardDetails.ExpiryYear
-        } : null,
-        TransactionId = payment.TransactionId,
-        FailureReason = payment.FailureReason,
-        CreatedAt = payment.CreatedAt,
-        ProcessedAt = payment.ProcessedAt,
-        CompletedAt = payment.CompletedAt
-    };
+    private static PaymentDto MapToDto(Domain.Aggregates.PaymentAggregate.Payment payment) => new(
+        payment.Id.Value,
+        payment.OrderId.Value,
+        payment.CustomerId.Value,
+        payment.Amount.Amount,
+        payment.Amount.Currency,
+        payment.Status.Name,
+        payment.Method.Name,
+        payment.CardDetails != null ? new CardDetailsDto(
+            payment.CardDetails.Last4Digits,
+            payment.CardDetails.CardType,
+            payment.CardDetails.ExpiryMonth,
+            payment.CardDetails.ExpiryYear,
+            payment.CardDetails.CardHolderName) : null,
+        payment.TransactionId,
+        payment.FailureReason,
+        payment.CreatedAt,
+        payment.ProcessedAt,
+        payment.CompletedAt);
 }

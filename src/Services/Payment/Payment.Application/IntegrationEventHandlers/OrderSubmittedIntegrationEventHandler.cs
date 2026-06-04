@@ -23,22 +23,13 @@ public class OrderSubmittedIntegrationEventHandler(
             @event.TotalAmount,
             @event.Currency);
 
-        var command = new CreatePaymentCommand
-        {
-            OrderId = @event.OrderId,
-            CustomerId = @event.CustomerId,
-            Amount = @event.TotalAmount,
-            Currency = @event.Currency,
-            Method = "CreditCard",
-            CardDetails = new CardDetailsDto
-            {
-                Last4Digits = "4242",
-                CardType = "Visa",
-                ExpiryMonth = 12,
-                ExpiryYear = DateTime.UtcNow.Year + 2,
-                CardHolderName = "Demo Customer"
-            }
-        };
+        var command = new CreatePaymentCommand(
+            @event.OrderId,
+            @event.CustomerId,
+            @event.TotalAmount,
+            @event.Currency,
+            "CreditCard",
+            new CardDetailsDto("4242", "Visa", 12, DateTime.UtcNow.Year + 2, "Demo Customer"));
 
         var paymentId = await mediator.Send(command, cancellationToken);
 
@@ -47,15 +38,9 @@ public class OrderSubmittedIntegrationEventHandler(
             paymentId,
             @event.OrderId);
 
-        var processCommand = new ProcessPaymentCommand { PaymentId = paymentId };
-        await mediator.Send(processCommand, cancellationToken);
+        await mediator.Send(new ProcessPaymentCommand(paymentId), cancellationToken);
 
-        var completeCommand = new CompletePaymentCommand
-        {
-            PaymentId = paymentId,
-            TransactionId = $"TXN-{Guid.NewGuid():N}"
-        };
-        await mediator.Send(completeCommand, cancellationToken);
+        await mediator.Send(new CompletePaymentCommand(paymentId, $"TXN-{Guid.NewGuid():N}"), cancellationToken);
 
         logger.LogInformation("Payment {PaymentId} processed and completed", paymentId);
     }

@@ -5,11 +5,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record ConsolidateOrdersCommand : IRequest<bool>
-{
-    public Guid SourceOrderId { get; init; }
-    public Guid TargetOrderId { get; init; }
-}
+public record ConsolidateOrdersCommand(Guid SourceOrderId, Guid TargetOrderId) : IRequest<bool>;
 
 /// <summary>
 /// Orchestrates the consolidation use case: load both aggregates, delegate to the

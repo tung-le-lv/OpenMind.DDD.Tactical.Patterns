@@ -64,20 +64,11 @@ public class Order : AggregateRoot<OrderId>
            && TotalAmount.IsGreaterThanOrEqualTo(Money.FromDecimal(minimumOrderValue, Currency));
 
     /// Returns true when the order can legally be cancelled at this point in its lifecycle.
-    public bool IsEligibleForCancellation()
-        => Status.CanBeCancelled();
-
-    // ── Side-Effect-Free Functions (Evans) ───────────────────────────────────
-    // Evans: "Place as much logic as possible into functions — operations that
-    // return results with no observable side effects."
-    // The key use is INSIDE command methods: compute everything first using these
-    // pure functions, validate the results, and only then mutate state. If any
-    // validation fails, nothing has changed — no partial mutation to roll back.
-    // See ApplyPromotion below for the full pattern in action.
+    public bool IsEligibleForCancellation() => Status.CanBeCancelled();
 
     private Order() 
     { 
-        _orderItems = new List<OrderItem>();
+        _orderItems = [];
     }
 
     #region Factory Methods

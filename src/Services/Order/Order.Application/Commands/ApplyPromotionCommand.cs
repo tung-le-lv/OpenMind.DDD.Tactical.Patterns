@@ -4,12 +4,7 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Application.Commands;
 
-public record ApplyPromotionCommand : IRequest<bool>
-{
-    public Guid OrderId { get; init; }
-    public decimal DiscountPercentage { get; init; }
-    public decimal MinimumOrderValueAfterDiscount { get; init; }
-}
+public record ApplyPromotionCommand(Guid OrderId, decimal DiscountPercentage, decimal MinimumOrderValueAfterDiscount) : IRequest<bool>;
 
 /// <summary>
 /// Demonstrates how the application layer stays thin when domain logic uses
