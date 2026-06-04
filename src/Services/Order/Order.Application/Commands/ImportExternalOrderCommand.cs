@@ -1,7 +1,7 @@
 using BuildingBlocks.Domain.BusinessRules;
 using MediatR;
 using Order.Application.AntiCorruption;
-using Order.Application.BusinessRules;
+using Order.Domain.BusinessRules;
 using Order.Domain.Factories;
 using Order.Domain.Repositories;
 

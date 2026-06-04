@@ -10,7 +10,12 @@ namespace Order.Application.AntiCorruption;
 /// All translation, field mapping, and data conversion happens here.
 /// NO business rules - only pure translation.
 /// </summary>
-public class ExternalOrderTranslator
+public interface IExternalOrderTranslator
+{
+    CreateOrderData Translate(ExternalOrderDto externalDto);
+}
+
+public class ExternalOrderTranslator : IExternalOrderTranslator
 {
     public CreateOrderData Translate(ExternalOrderDto external)
     {

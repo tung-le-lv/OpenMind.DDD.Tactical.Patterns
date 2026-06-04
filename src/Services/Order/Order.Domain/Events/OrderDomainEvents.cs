@@ -127,3 +127,30 @@ public record OrderCancelledDomainEvent : DomainEventBase
         Reason = reason;
     }
 }
+
+/// <summary>
+/// Domain Event raised when a promotional discount is applied to an order.
+/// Carries the computed totals so downstream contexts don't need to recalculate.
+/// </summary>
+public record PromotionAppliedDomainEvent : DomainEventBase
+{
+    public OrderId OrderId { get; }
+    public decimal DiscountPercentage { get; }
+    public decimal OriginalTotal { get; }
+    public decimal DiscountedTotal { get; }
+    public string Currency { get; }
+
+    public PromotionAppliedDomainEvent(
+        OrderId orderId,
+        decimal discountPercentage,
+        decimal originalTotal,
+        decimal discountedTotal,
+        string currency)
+    {
+        OrderId = orderId;
+        DiscountPercentage = discountPercentage;
+        OriginalTotal = originalTotal;
+        DiscountedTotal = discountedTotal;
+        Currency = currency;
+    }
+}

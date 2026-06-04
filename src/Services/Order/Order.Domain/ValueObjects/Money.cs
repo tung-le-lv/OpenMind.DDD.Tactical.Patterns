@@ -4,22 +4,29 @@ namespace Order.Domain.ValueObjects;
 
 /// <summary>
 /// Value Object representing Money in the Order domain.
-/// Encapsulates amount and currency, providing type safety and domain behavior.
-/// 
-/// DDD Principle: Value Objects are immutable and defined by their attributes.
+///
+/// Supple Design patterns applied:
+/// - Standalone Class: depends only on ValueObject; no domain imports needed to reason about it
+/// - Closure of Operations: every arithmetic operation returns Money → Money is closed under its operations
+/// - Side-Effect-Free Functions (Evans): Add, Subtract, Multiply, ApplyDiscount are the canonical
+///   demonstration. Each takes input values and returns a NEW Money instance — nothing is mutated.
+///   Because this Value Object is immutable, ALL of its operations are structurally side-effect-free:
+///   the compiler enforces the guarantee Evans asks you to state explicitly. Callers can compose chains
+///   like price.ApplyDiscount(10).Add(tax) freely, without fear of changing state elsewhere.
+/// - Intention-Revealing Interfaces: IsZero, IsGreaterThanOrEqualTo, ApplyDiscount express
+///   domain intent rather than raw arithmetic
 /// </summary>
 public class Money : ValueObject
 {
     public decimal Amount { get; }
     public string Currency { get; }
 
-    private Money() { } // EF Core
+    private Money() { } // for persistence mappers
 
     public Money(decimal amount, string currency)
     {
         if (amount < 0)
             throw new ArgumentException("Amount cannot be negative", nameof(amount));
-
         if (string.IsNullOrWhiteSpace(currency))
             throw new ArgumentException("Currency is required", nameof(currency));
 
@@ -27,9 +34,26 @@ public class Money : ValueObject
         Currency = currency.ToUpperInvariant();
     }
 
-    public static Money Zero(string currency = "USD") => new(0, currency);
+    // ── Intention-Revealing factory methods ──────────────────────────────────
 
+    public static Money Zero(string currency = "USD") => new(0, currency);
     public static Money FromDecimal(decimal amount, string currency = "USD") => new(amount, currency);
+
+    // ── Intention-Revealing query predicates ────────────────────────────────
+
+    /// Returns true when the amount carries no monetary value.
+    public bool IsZero => Amount == 0;
+
+    public bool IsGreaterThanOrEqualTo(Money threshold)
+    {
+        EnsureSameCurrency(threshold);
+        return Amount >= threshold.Amount;
+    }
+
+    // ── Closure of Operations ─────────────────────────────────────────────────
+    // Every operation takes Money and returns Money, keeping the type closed.
+    // Callers can compose chains like: price.ApplyDiscount(10).Add(tax)
+    // without leaving the Money concept.
 
     public Money Add(Money other)
     {
@@ -53,10 +77,15 @@ public class Money : ValueObject
         return new Money(Amount * multiplier, Currency);
     }
 
-    private void EnsureSameCurrency(Money other)
+    /// Reduces this amount by a percentage and returns a new Money — result stays a Money.
+    public Money ApplyDiscount(decimal percentage)
     {
-        if (Currency != other.Currency)
-            throw new InvalidOperationException($"Cannot operate on different currencies: {Currency} and {other.Currency}");
+        if (percentage is < 0 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(percentage), "Discount percentage must be between 0 and 100.");
+        }
+        
+        return new Money(Amount * (1 - percentage / 100m), Currency);
     }
 
     public static Money operator +(Money left, Money right) => left.Add(right);
@@ -69,4 +98,12 @@ public class Money : ValueObject
     }
 
     public override string ToString() => $"{Amount:N2} {Currency}";
+
+    // ── Standalone: private helper keeps the currency guard inside Money itself ─
+
+    private void EnsureSameCurrency(Money other)
+    {
+        if (Currency != other.Currency)
+            throw new InvalidOperationException($"Cannot operate on different currencies: {Currency} and {other.Currency}");
+    }
 }

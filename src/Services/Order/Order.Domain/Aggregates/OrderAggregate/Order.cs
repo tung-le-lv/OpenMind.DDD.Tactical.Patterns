@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using BuildingBlocks.Domain;
 using Order.Domain.BusinessRules;
 using Order.Domain.Events;
@@ -8,13 +9,27 @@ namespace Order.Domain.Aggregates.OrderAggregate;
 
 /// <summary>
 /// Order Aggregate Root.
-/// 
+///
 /// DDD Principles applied:
 /// 1. Aggregate Root: Order is the single entry point for the Order aggregate
 /// 2. Consistency Boundary: All invariants within the aggregate are enforced here
 /// 3. Encapsulation: Internal entities (OrderItems) cannot be modified directly
 /// 4. Domain Events: Business events are raised for important state changes
 /// 5. Rich Domain Model: Business logic lives in the domain, not in services
+
+/// Supple Design patterns applied:
+/// - Intention-Revealing Interfaces: ItemCount, IsEligibleForSubmission, IsEligibleForCancellation
+///   expose domain concepts rather than raw internals
+/// - Side-Effect-Free Functions (Evans): see ApplyPromotion for the full pattern.
+///   The command first calls ProjectTotalWithDiscount and item.CalculateDiscountAmount
+///   (pure computations — no state touched) to validate the projected outcome, then
+///   applies all mutations only after every check passes. Evans' core idea: extract
+///   complex calculations into side-effect-free functions so commands are only
+///   responsible for mutating state, not for mixing computation with mutation.
+/// - Assertions: every state transition states its postcondition with Debug.Assert
+///   so readers know what the system guarantees after each command
+/// - Conceptual Contours: Submit delegates its eligibility check to IsEligibleForSubmission,
+///   carving the validation boundary cleanly along the domain concept
 /// </summary>
 public class Order : AggregateRoot<OrderId>
 {
@@ -36,6 +51,29 @@ public class Order : AggregateRoot<OrderId>
 
     public Money TotalAmount => CalculateTotalAmount();
     public string Currency { get; private set; }
+
+    // ── Intention-Revealing Interfaces (query predicates) ────────────────────
+    // These express domain concepts as named predicates rather than raw state
+    // comparisons. They read state but do not compute or return new values —
+    // they are NOT Evans' Side-Effect-Free Functions; they are CQS-style queries.
+
+    /// Returns true when the order can legally be submitted at the given minimum value.
+    public bool IsEligibleForSubmission(decimal minimumOrderValue = 10.00m)
+        => Status.CanBeSubmitted()
+           && _orderItems.Count > 0
+           && TotalAmount.IsGreaterThanOrEqualTo(Money.FromDecimal(minimumOrderValue, Currency));
+
+    /// Returns true when the order can legally be cancelled at this point in its lifecycle.
+    public bool IsEligibleForCancellation()
+        => Status.CanBeCancelled();
+
+    // ── Side-Effect-Free Functions (Evans) ───────────────────────────────────
+    // Evans: "Place as much logic as possible into functions — operations that
+    // return results with no observable side effects."
+    // The key use is INSIDE command methods: compute everything first using these
+    // pure functions, validate the results, and only then mutate state. If any
+    // validation fails, nothing has changed — no partial mutation to roll back.
+    // See ApplyPromotion below for the full pattern in action.
 
     private Order() 
     { 
@@ -108,27 +146,17 @@ public class Order : AggregateRoot<OrderId>
 
     public void UpdateItemQuantity(OrderItemId itemId, int newQuantity)
     {
-        // Use IBusinessRule for clear validation message
         CheckRule(new OrderMustBeInDraftStatusRule(Status));
 
-        var item = _orderItems.FirstOrDefault(x => x.Id == itemId);
-        if (item == null)
-            throw new DomainException($"Order item {itemId} not found");
+        var item = _orderItems.FirstOrDefault(x => x.Id == itemId)
+            ?? throw new DomainException($"Order item {itemId} not found");
 
         if (newQuantity <= 0)
         {
-            // Validate min items count before removing
-            var minItemsSpec = new MinItemsCountSpecification(1);
-            var maxItemsSpec = new MaxItemsCountSpecification(100);
-            var itemCountSpec = minItemsSpec & maxItemsSpec;
-            
+            // Assertion: check precondition before mutating — no rollback needed.
+            if (_orderItems.Count <= 1)
+                throw new DomainException("Cannot remove the last item from an order.");
             _orderItems.Remove(item);
-            
-            if (!itemCountSpec.IsSatisfiedBy(this))
-            {
-                _orderItems.Add(item); // Rollback
-                throw new DomainException("Order must have at least 1 item");
-            }
         }
         else
         {
@@ -136,6 +164,9 @@ public class Order : AggregateRoot<OrderId>
         }
 
         SetModified();
+
+        // Assertion: postcondition — order must always retain at least one item.
+        Debug.Assert(_orderItems.Count >= 1, "Order must have at least one item after quantity update.");
     }
 
     public void UpdateShippingAddress(Address newAddress)
@@ -153,36 +184,75 @@ public class Order : AggregateRoot<OrderId>
         SetModified();
     }
 
-    /// <summary>
-    /// State transition that raises domain event - triggers integration event for Payment Bounded Context.
-    /// </summary>
-    public void Submit(decimal minimumOrderValue = 10.00m)
+    /// Applies a percentage promotion discount to all items in the order.
+    ///
+    /// Side-Effect-Free Functions pattern (Evans) in action:
+    ///   Phase 1 — pure computation, nothing mutated yet:
+    ///     - ProjectTotalWithDiscount computes the projected order total after discount
+    ///     - item.CalculateDiscountAmount computes the absolute discount per item
+    ///   Phase 2 — validation against the computed results (still no mutation):
+    ///     - rejects if the projected total falls below the minimum order value
+    ///   Phase 3 — state mutations, only after all checks pass:
+    ///     - item.ApplyDiscount writes the computed discount onto each item
+    ///     - SetModified and Emit record the transition
+    ///
+    /// If Phase 1-2 throws, the order is completely unchanged — no partial state to roll back.
+    public void ApplyPromotion(decimal discountPercentage, decimal minimumOrderValueAfterDiscount = 0m)
     {
-        if (!Status.CanBeSubmitted())
-            throw new DomainException($"Cannot submit an order in {Status.Name} status");
-
-        // Use IBusinessRule for validation with clear error message
+        CheckRule(new OrderMustBeInDraftStatusRule(Status));
         CheckRule(new OrderMustHaveAtLeastOneItemRule(_orderItems.Count));
 
-        var minimumValueSpec = new MinimumOrderValueSpecification(minimumOrderValue);
-        if (!minimumValueSpec.IsSatisfiedBy(this))
+        // Phase 1: Side effect free function. Pure computation — no state touched.
+        // The method ApplyDiscount or CalculateDiscountAmount (containing algorithm) can be tested independently
+        var projectedTotal = TotalAmount.ApplyDiscount(discountPercentage);
+        var discountsPerItem = _orderItems
+            .Select(item => (item, discount: item.CalculateDiscountAmount(discountPercentage)))
+            .ToList();
+
+        // Phase 2: validate the computed results — no mutation.
+        CheckRule(new PromotionTotalMustMeetMinimumRule(projectedTotal, minimumOrderValueAfterDiscount, Currency));
+
+        // Phase 3: Apply state change
+        var originalTotal = TotalAmount;
+        foreach (var (item, discount) in discountsPerItem)
+        {
+            item.ApplyDiscount(discount);
+        }
+
+        SetModified();
+        Emit(new PromotionAppliedDomainEvent(Id, discountPercentage, originalTotal.Amount, projectedTotal.Amount, Currency));
+
+        Debug.Assert(
+            TotalAmount.IsGreaterThanOrEqualTo(Money.Zero(Currency)),
+            "Order total must remain non-negative after promotion.");
+    }
+
+    /// Transitions the order to Submitted status and triggers payment.
+    /// Conceptual Contours: delegates eligibility check to IsEligibleForSubmission,
+    /// carving the validation boundary along the natural domain concept.
+    public void Submit(decimal minimumOrderValue = 10.00m)
+    {
+        // Use the side-effect-free query to check readiness before mutating.
+        if (!IsEligibleForSubmission(minimumOrderValue))
+        {
+            if (!Status.CanBeSubmitted())
+                throw new DomainException($"Cannot submit an order in {Status.Name} status");
+            CheckRule(new OrderMustHaveAtLeastOneItemRule(_orderItems.Count));
             throw new DomainException($"Order total must be at least {minimumOrderValue:C}");
+        }
 
         Status = OrderStatus.Submitted;
         SubmittedAt = DateTime.UtcNow;
         SetModified();
 
-        // Raise domain event - this will trigger integration event for Payment service
-        Emit(new OrderSubmittedDomainEvent(
-            Id,
-            CustomerId,
-            TotalAmount.Amount,
-            Currency));
+        Emit(new OrderSubmittedDomainEvent(Id, CustomerId, TotalAmount.Amount, Currency));
+
+        // Assertion: postcondition — submitted orders always have a timestamp.
+        Debug.Assert(SubmittedAt.HasValue, "SubmittedAt must be set after Submit.");
+        Debug.Assert(Status == OrderStatus.Submitted, "Status must be Submitted after Submit.");
     }
 
-    /// <summary>
     /// Called when payment is confirmed from the Payment Bounded Context.
-    /// </summary>
     public void MarkAsPaid(DateTime paidAt)
     {
         if (!Status.CanBePaid())
@@ -193,6 +263,10 @@ public class Order : AggregateRoot<OrderId>
         SetModified();
 
         Emit(new OrderPaidDomainEvent(Id, paidAt));
+
+        // Assertion: postcondition — a paid order always records when payment occurred.
+        Debug.Assert(PaidAt.HasValue, "PaidAt must be set after MarkAsPaid.");
+        Debug.Assert(Status == OrderStatus.Paid, "Status must be Paid after MarkAsPaid.");
     }
 
     public void MarkPaymentFailed(string reason)
@@ -204,6 +278,8 @@ public class Order : AggregateRoot<OrderId>
         SetModified();
 
         Emit(new OrderPaymentFailedDomainEvent(Id, reason));
+
+        Debug.Assert(Status == OrderStatus.PaymentFailed, "Status must be PaymentFailed after MarkPaymentFailed.");
     }
 
     public void StartProcessing()
@@ -214,6 +290,8 @@ public class Order : AggregateRoot<OrderId>
 
         Status = OrderStatus.Processing;
         SetModified();
+
+        Debug.Assert(Status == OrderStatus.Processing, "Status must be Processing after StartProcessing.");
     }
 
     public void Ship()
@@ -225,6 +303,8 @@ public class Order : AggregateRoot<OrderId>
         SetModified();
 
         Emit(new OrderShippedDomainEvent(Id));
+
+        Debug.Assert(Status == OrderStatus.Shipped, "Status must be Shipped after Ship.");
     }
 
     public void MarkAsDelivered()
@@ -236,27 +316,29 @@ public class Order : AggregateRoot<OrderId>
         SetModified();
 
         Emit(new OrderDeliveredDomainEvent(Id));
+
+        Debug.Assert(Status == OrderStatus.Delivered, "Status must be Delivered after MarkAsDelivered.");
     }
 
     public void Cancel(string reason)
     {
-        // Use IBusinessRule for validation with clear error message
-        // Note: The CancellableOrderSpecification is still available for querying cancellable orders
         CheckRule(new OrderCannotBeCancelledAfterShippingRule(Status));
 
         Status = OrderStatus.Cancelled;
         SetModified();
 
         Emit(new OrderCancelledDomainEvent(Id, reason));
+
+        // Assertion: postcondition — once cancelled, the order cannot be modified further.
+        Debug.Assert(Equals(Status, OrderStatus.Cancelled), "Status must be Cancelled after Cancel.");
+        Debug.Assert(!IsEligibleForCancellation(), "A cancelled order must not be eligible for cancellation again.");
     }
 
     #endregion
-
-    #region Private Methods
-
+    
     private Money CalculateTotalAmount()
     {
-        if (!_orderItems.Any())
+        if (_orderItems.Count == 0)
             return Money.Zero(Currency);
 
         return _orderItems
@@ -270,5 +352,4 @@ public class Order : AggregateRoot<OrderId>
         IncrementVersion();
     }
 
-    #endregion
 }
