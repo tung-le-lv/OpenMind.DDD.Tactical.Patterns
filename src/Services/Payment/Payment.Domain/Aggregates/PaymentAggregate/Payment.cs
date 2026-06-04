@@ -46,8 +46,7 @@ public class Payment : AggregateRoot<PaymentId>
         PaymentMethod method,
         CardDetails? cardDetails = null)
     {
-        // Use IBusinessRule for validation with clear error messages
-        CheckRule(new PaymentAmountMustBePositiveRule(amount?.Amount ?? 0));
+        CheckRule(new PaymentAmountMustBePositiveRule(amount.Amount));
         CheckRule(new CardPaymentMustHaveCardDetailsRule(method, cardDetails != null));
 
         var payment = new Payment
@@ -77,7 +76,6 @@ public class Payment : AggregateRoot<PaymentId>
 
     public void StartProcessing()
     {
-        // Use IBusinessRule for validation with clear error messages
         CheckRule(new PaymentMustBeProcessableRule(Status));
         CheckRule(new CardMustNotBeExpiredRule(CardDetails));
 
@@ -133,7 +131,6 @@ public class Payment : AggregateRoot<PaymentId>
 
     public void Refund(string reason)
     {
-        // Use IBusinessRule for validation with clear error message
         CheckRule(new PaymentMustBeRefundableRule(Status));
 
         Status = PaymentStatus.Refunded;
