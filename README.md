@@ -1,5 +1,11 @@
 # Domain-Driven Design
-Demonstrate DDD strategic and tactical design.
+Demonstrate DDD strategic and tactical design.  
+
+Why calling it strategic and tactical design?  
+
+In military terms, strategy is the big-picture planning: which battles to fight, where to commit your forces, what the overall objective is. Tactics are the on-the-ground execution: how a unit actually maneuvers and fights to win the specific engagement in front of it. Strategy is what and where; tactics are how.  
+
+Evans mapped this directly onto domain modeling. Strategic design covers the system-wide, coarse-grained, long-lived decisions — where to draw bounded context boundaries, how contexts and teams relate (the context map, ACL, shared kernel), and which subdomain is your core and therefore deserves your best modeling effort. Tactical design is the hands-on, in-the-trenches work of building a model once you're inside a boundary: the concrete code-level building blocks like entities, value objects, aggregates, repositories. They're the tools you reach for to actually implement the model, the same way tactics are what you use to win the battle you're currently in.
 
 ## Table of Contents
 
@@ -35,15 +41,9 @@ Demonstrate DDD strategic and tactical design.
 ## References
 
 - Evans, Eric. "Domain-Driven Design: Tackling Complexity in the Heart of Software"
-- Vernon, Vaughn. "Domain-Driven Design Distilled"
-- Vernon, Vaughn. "Implementing Domain-Driven Design"
+- Vernon, Vaughn. "Domain-Driven Design Distilled" & "Implementing Domain-Driven Design"
 
 ## Tactical Design Patterns
-Why calling it tactical design?  
-
-In military terms, strategy is the big-picture planning: which battles to fight, where to commit your forces, what the overall objective is. Tactics are the on-the-ground execution: how a unit actually maneuvers and fights to win the specific engagement in front of it. Strategy is what and where; tactics are how.  
-
-Evans mapped this directly onto domain modeling. Strategic design covers the system-wide, coarse-grained, long-lived decisions — where to draw bounded context boundaries, how contexts and teams relate (the context map, ACL, shared kernel), and which subdomain is your core and therefore deserves your best modeling effort. Tactical design is the hands-on, in-the-trenches work of building a model once you're inside a boundary: the concrete code-level building blocks like entities, value objects, aggregates, repositories. They're the tools you reach for to actually implement the model, the same way tactics are what you use to win the battle you're currently in.
 
 ### The Building Blocks
 
