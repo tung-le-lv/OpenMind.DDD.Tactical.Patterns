@@ -52,7 +52,10 @@ public class InMemoryEventBus(
             (_, existing) =>
             {
                 if (!existing.Contains(handlerType))
+                {
                     existing.Add(handlerType);
+                }
+
                 return existing;
             });
 

@@ -20,7 +20,9 @@ public class ExternalOrderTranslator : IExternalOrderTranslator
     public CreateOrderData Translate(ExternalOrderDto external)
     {
         if (external == null)
+        {
             throw new ArgumentNullException(nameof(external));
+        }
 
         var customerId = CustomerId.From(external.CustomerId);
         var shippingAddress = new Address(

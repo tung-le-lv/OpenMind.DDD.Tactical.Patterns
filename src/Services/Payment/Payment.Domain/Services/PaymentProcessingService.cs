@@ -33,14 +33,20 @@ public class PaymentProcessingService : IPaymentProcessingService
     public PaymentValidationResult ValidatePayment(Aggregates.PaymentAggregate.Payment payment)
     {
         if (payment.Amount.Amount <= 0)
+        {
             return PaymentValidationResult.Failure("Payment amount must be positive");
+        }
 
         if (payment.CardDetails != null && payment.CardDetails.IsExpired())
+        {
             return PaymentValidationResult.Failure("Card has expired");
+        }
 
         var pendingSpec = new PendingPaymentSpecification();
         if (!pendingSpec.IsSatisfiedBy(payment))
+        {
             return PaymentValidationResult.Failure($"Payment cannot be processed in {payment.Status.Name} status");
+        }
 
         return PaymentValidationResult.Success();
     }

@@ -9,7 +9,9 @@ public static class MongoDbConfiguration
     public static void Configure()
     {
         if (_configured)
+        {
             return;
+        }
 
         var conventions = new ConventionPack
         {

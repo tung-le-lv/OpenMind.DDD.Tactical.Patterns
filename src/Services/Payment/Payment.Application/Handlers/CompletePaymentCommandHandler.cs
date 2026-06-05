@@ -11,7 +11,9 @@ public class CompletePaymentCommandHandler(IPaymentRepository paymentRepository)
     {
         var payment = await paymentRepository.GetByIdAsync(PaymentId.From(request.PaymentId), cancellationToken);
         if (payment == null)
+        {
             return false;
+        }
 
         payment.Complete(request.TransactionId);
         paymentRepository.Update(payment);

@@ -31,7 +31,9 @@ public abstract class Enumeration : IComparable
     public override bool Equals(object? obj)
     {
         if (obj is not Enumeration otherValue)
+        {
             return false;
+        }
 
         var typeMatches = GetType() == obj.GetType();
         var valueMatches = Id.Equals(otherValue.Id);
@@ -62,7 +64,9 @@ public abstract class Enumeration : IComparable
         var matchingItem = GetAll<T>().FirstOrDefault(predicate);
 
         if (matchingItem is null)
+        {
             throw new InvalidOperationException($"'{value}' is not a valid {description} in {typeof(T)}");
+        }
 
         return matchingItem;
     }

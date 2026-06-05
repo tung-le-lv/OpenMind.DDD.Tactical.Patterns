@@ -91,16 +91,24 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>
     public override bool Equals(object? obj)
     {
         if (obj is not Entity<TId> other)
+        {
             return false;
+        }
 
         if (ReferenceEquals(this, other))
+        {
             return true;
+        }
 
         if (GetType() != other.GetType())
+        {
             return false;
+        }
 
         if (IsTransient() || other.IsTransient())
+        {
             return false;
+        }
 
         return Id.Equals(other.Id);
     }

@@ -12,7 +12,9 @@ public class MarkOrderAsPaidCommandHandler(IOrderRepository orderRepository) : I
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         order.MarkAsPaid(request.PaidAt);
 

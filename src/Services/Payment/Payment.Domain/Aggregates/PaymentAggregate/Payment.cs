@@ -127,10 +127,14 @@ public class Payment : AggregateRoot<PaymentId>
     public void Complete(string transactionId)
     {
         if (Status != PaymentStatus.Processing)
+        {
             throw new DomainException($"Cannot complete payment in {Status.Name} status");
+        }
 
         if (string.IsNullOrWhiteSpace(transactionId))
+        {
             throw new ArgumentException("Transaction ID is required", nameof(transactionId));
+        }
 
         Status = PaymentStatus.Completed;
         TransactionId = transactionId;
@@ -151,10 +155,14 @@ public class Payment : AggregateRoot<PaymentId>
     public void Fail(string reason)
     {
         if (Status != PaymentStatus.Processing && Status != PaymentStatus.Pending)
+        {
             throw new DomainException($"Cannot fail payment in {Status.Name} status");
+        }
 
         if (string.IsNullOrWhiteSpace(reason))
+        {
             throw new ArgumentException("Failure reason is required", nameof(reason));
+        }
 
         Status = PaymentStatus.Failed;
         FailureReason = reason;
@@ -177,7 +185,9 @@ public class Payment : AggregateRoot<PaymentId>
     public void Cancel(string reason)
     {
         if (!Status.CanBeCancelled())
+        {
             throw new DomainException($"Cannot cancel payment in {Status.Name} status");
+        }
 
         Status = PaymentStatus.Cancelled;
         FailureReason = reason;

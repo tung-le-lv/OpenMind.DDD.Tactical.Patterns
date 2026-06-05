@@ -33,19 +33,29 @@ public class CardDetails : ValueObject
     public CardDetails(string last4Digits, string cardType, int expiryMonth, int expiryYear, string cardHolderName)
     {
         if (string.IsNullOrWhiteSpace(last4Digits) || last4Digits.Length != 4)
+        {
             throw new ArgumentException("Last 4 digits must be exactly 4 characters", nameof(last4Digits));
+        }
 
         if (string.IsNullOrWhiteSpace(cardType))
+        {
             throw new ArgumentException("Card type is required", nameof(cardType));
+        }
 
         if (expiryMonth < 1 || expiryMonth > 12)
+        {
             throw new ArgumentException("Expiry month must be between 1 and 12", nameof(expiryMonth));
+        }
 
         if (expiryYear < DateTime.UtcNow.Year)
+        {
             throw new ArgumentException("Card has expired", nameof(expiryYear));
+        }
 
         if (string.IsNullOrWhiteSpace(cardHolderName))
+        {
             throw new ArgumentException("Card holder name is required", nameof(cardHolderName));
+        }
 
         Last4Digits    = last4Digits;
         CardType       = cardType;

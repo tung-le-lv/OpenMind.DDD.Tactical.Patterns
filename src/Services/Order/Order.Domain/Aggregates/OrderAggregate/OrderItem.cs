@@ -63,9 +63,14 @@ public class OrderItem : Entity<OrderItemId>
         Money? discount = null)
     {
         if (string.IsNullOrWhiteSpace(productName))
+        {
             throw new ArgumentException("Product name is required", nameof(productName));
+        }
+
         if (quantity <= 0)
+        {
             throw new ArgumentException("Quantity must be positive", nameof(quantity));
+        }
 
         return new OrderItem
         {
@@ -90,7 +95,10 @@ public class OrderItem : Entity<OrderItemId>
     internal Money TotalForQuantity(int quantity)
     {
         if (quantity <= 0)
+        {
             throw new ArgumentException("Quantity must be positive", nameof(quantity));
+        }
+
         return UnitPrice.Multiply(quantity) - Discount;
     }
 
@@ -108,14 +116,20 @@ public class OrderItem : Entity<OrderItemId>
     internal void SetQuantity(int quantity)
     {
         if (quantity <= 0)
+        {
             throw new ArgumentException("Quantity must be positive", nameof(quantity));
+        }
+
         Quantity = quantity;
     }
 
     internal void AddQuantity(int quantity)
     {
         if (quantity <= 0)
+        {
             throw new ArgumentException("Quantity to add must be positive", nameof(quantity));
+        }
+
         Quantity += quantity;
     }
 
@@ -123,7 +137,9 @@ public class OrderItem : Entity<OrderItemId>
     {
         var itemTotal = UnitPrice.Multiply(Quantity);
         if (discount.Amount > itemTotal.Amount)
+        {
             throw new DomainException("Discount cannot exceed item total");
+        }
 
         Discount = discount;
 

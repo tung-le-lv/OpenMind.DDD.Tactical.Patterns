@@ -28,9 +28,14 @@ public class Money : ValueObject
     public Money(decimal amount, string currency)
     {
         if (amount < 0)
+        {
             throw new ArgumentException("Amount cannot be negative", nameof(amount));
+        }
+
         if (string.IsNullOrWhiteSpace(currency))
+        {
             throw new ArgumentException("Currency is required", nameof(currency));
+        }
 
         Amount = amount;
         Currency = currency.ToUpperInvariant();
@@ -67,14 +72,20 @@ public class Money : ValueObject
         EnsureSameCurrency(other);
         var result = Amount - other.Amount;
         if (result < 0)
+        {
             throw new InvalidOperationException("Resulting amount cannot be negative");
+        }
+
         return new Money(result, Currency);
     }
 
     public Money Multiply(int multiplier)
     {
         if (multiplier < 0)
+        {
             throw new ArgumentException("Multiplier cannot be negative", nameof(multiplier));
+        }
+
         return new Money(Amount * multiplier, Currency);
     }
 
@@ -99,6 +110,8 @@ public class Money : ValueObject
     private void EnsureSameCurrency(Money other)
     {
         if (Currency != other.Currency)
+        {
             throw new InvalidOperationException($"Cannot operate on different currencies: {Currency} and {other.Currency}");
+        }
     }
 }

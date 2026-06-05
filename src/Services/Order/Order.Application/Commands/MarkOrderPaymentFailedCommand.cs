@@ -12,7 +12,9 @@ public class MarkOrderPaymentFailedCommandHandler(IOrderRepository orderReposito
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         order.MarkPaymentFailed(request.Reason);
 

@@ -13,7 +13,9 @@ public class UpdateShippingAddressCommandHandler(IOrderRepository orderRepositor
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         var newAddress = new Address(
             request.NewAddress.Street,

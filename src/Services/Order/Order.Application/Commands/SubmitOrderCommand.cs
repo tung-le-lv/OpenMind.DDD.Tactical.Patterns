@@ -12,7 +12,9 @@ public class SubmitOrderCommandHandler(IOrderRepository orderRepository) : IRequ
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         order.Submit();
 

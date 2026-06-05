@@ -22,11 +22,15 @@ public class ConsolidateOrdersCommandHandler(
     {
         var sourceOrder = await orderRepository.GetByIdAsync(OrderId.From(request.SourceOrderId), cancellationToken);
         if (sourceOrder is null)
+        {
             return false;
+        }
 
         var targetOrder = await orderRepository.GetByIdAsync(OrderId.From(request.TargetOrderId), cancellationToken);
         if (targetOrder is null)
+        {
             return false;
+        }
 
         consolidationService.Consolidate(sourceOrder, targetOrder);
 

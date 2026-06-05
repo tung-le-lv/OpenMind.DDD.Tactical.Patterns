@@ -14,7 +14,9 @@ public class ProcessPaymentCommandHandler(
     {
         var payment = await paymentRepository.GetByIdAsync(PaymentId.From(request.PaymentId), cancellationToken);
         if (payment == null)
+        {
             return false;
+        }
 
         var validationResult = processingService.ValidatePayment(payment);
         if (!validationResult.IsValid)

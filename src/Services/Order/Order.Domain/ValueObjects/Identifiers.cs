@@ -15,7 +15,10 @@ public class OrderId : ValueObject
     public OrderId(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("OrderId cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 
@@ -45,7 +48,10 @@ public class OrderItemId : ValueObject
     public OrderItemId(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("OrderItemId cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 
@@ -75,7 +81,10 @@ public class CustomerId : ValueObject
     public CustomerId(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("CustomerId cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 
@@ -104,7 +113,10 @@ public class ProductId : ValueObject
     public ProductId(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("ProductId cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 

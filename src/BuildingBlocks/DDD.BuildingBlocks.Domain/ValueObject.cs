@@ -19,7 +19,9 @@ public abstract class ValueObject : IEquatable<ValueObject>
     public override bool Equals(object? obj)
     {
         if (obj is null || obj.GetType() != GetType())
+        {
             return false;
+        }
 
         var other = (ValueObject)obj;
 
@@ -41,10 +43,14 @@ public abstract class ValueObject : IEquatable<ValueObject>
     public static bool operator ==(ValueObject? left, ValueObject? right)
     {
         if (left is null && right is null)
+        {
             return true;
+        }
 
         if (left is null || right is null)
+        {
             return false;
+        }
 
         return left.Equals(right);
     }

@@ -12,7 +12,9 @@ public class UpdateOrderItemQuantityCommandHandler(IOrderRepository orderReposit
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         order.UpdateItemQuantity(OrderItemId.From(request.ItemId), request.NewQuantity);
 

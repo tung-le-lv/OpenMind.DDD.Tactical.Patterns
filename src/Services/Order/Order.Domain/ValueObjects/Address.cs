@@ -19,13 +19,24 @@ public class Address : ValueObject
     public Address(string street, string city, string state, string country, string zipCode)
     {
         if (string.IsNullOrWhiteSpace(street))
+        {
             throw new ArgumentException("Street is required", nameof(street));
+        }
+
         if (string.IsNullOrWhiteSpace(city))
+        {
             throw new ArgumentException("City is required", nameof(city));
+        }
+
         if (string.IsNullOrWhiteSpace(country))
+        {
             throw new ArgumentException("Country is required", nameof(country));
+        }
+
         if (string.IsNullOrWhiteSpace(zipCode))
+        {
             throw new ArgumentException("ZipCode is required", nameof(zipCode));
+        }
 
         Street = street;
         City = city;

@@ -13,7 +13,9 @@ public class GetPaymentByIdQueryHandler(IPaymentRepository paymentRepository) : 
         var payment = await paymentRepository.GetByIdAsync(PaymentId.From(request.PaymentId), cancellationToken);
 
         if (payment == null)
+        {
             return null;
+        }
 
         return MapToDto(payment);
     }

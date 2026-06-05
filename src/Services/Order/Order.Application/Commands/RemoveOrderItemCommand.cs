@@ -12,7 +12,9 @@ public class RemoveOrderItemCommandHandler(IOrderRepository orderRepository) : I
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         order.RemoveItem(OrderItemId.From(request.ItemId));
 

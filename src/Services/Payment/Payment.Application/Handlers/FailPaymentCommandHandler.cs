@@ -11,7 +11,9 @@ public class FailPaymentCommandHandler(IPaymentRepository paymentRepository) : I
     {
         var payment = await paymentRepository.GetByIdAsync(PaymentId.From(request.PaymentId), cancellationToken);
         if (payment == null)
+        {
             return false;
+        }
 
         payment.Fail(request.Reason);
         paymentRepository.Update(payment);

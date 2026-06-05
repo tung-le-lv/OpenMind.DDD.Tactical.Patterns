@@ -23,7 +23,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         var result = await mediator.Send(new GetOrderByIdQuery(orderId), cancellationToken);
 
         if (result == null)
+        {
             return NotFound();
+        }
 
         return Ok(result);
     }
@@ -80,7 +82,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             cancellationToken);
 
         if (!result)
+        {
             return NotFound();
+        }
 
         return Ok();
     }
@@ -93,7 +97,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         var result = await mediator.Send(new RemoveOrderItemCommand(orderId, itemId), cancellationToken);
 
         if (!result)
+        {
             return NotFound();
+        }
 
         return Ok();
     }
@@ -109,7 +115,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         var result = await mediator.Send(new UpdateShippingAddressCommand(orderId, request), cancellationToken);
 
         if (!result)
+        {
             return NotFound();
+        }
 
         return Ok();
     }
@@ -125,7 +133,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             var result = await mediator.Send(new SubmitOrderCommand(orderId), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogInformation("Order {OrderId} submitted", orderId);
 
@@ -151,7 +161,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             var result = await mediator.Send(new CancelOrderCommand(orderId, request.Reason), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogInformation("Order {OrderId} cancelled. Reason: {Reason}", orderId, request.Reason);
 
@@ -177,7 +189,9 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             var result = await mediator.Send(new ConsolidateOrdersCommand(sourceOrderId, targetOrderId), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogInformation("Order {SourceOrderId} consolidated into {TargetOrderId}", sourceOrderId, targetOrderId);
 

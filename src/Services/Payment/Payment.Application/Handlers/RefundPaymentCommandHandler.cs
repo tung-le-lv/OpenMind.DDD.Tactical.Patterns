@@ -11,7 +11,9 @@ public class RefundPaymentCommandHandler(IPaymentRepository paymentRepository) :
     {
         var payment = await paymentRepository.GetByIdAsync(PaymentId.From(request.PaymentId), cancellationToken);
         if (payment == null)
+        {
             return false;
+        }
 
         payment.Refund(request.Reason);
         paymentRepository.Update(payment);

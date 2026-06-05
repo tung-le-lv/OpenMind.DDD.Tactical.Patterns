@@ -14,7 +14,10 @@ public class PaymentId : ValueObject
     public PaymentId(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("PaymentId cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 
@@ -45,7 +48,10 @@ public class OrderReference : ValueObject
     public OrderReference(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("OrderReference cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 
@@ -74,7 +80,10 @@ public class CustomerReference : ValueObject
     public CustomerReference(Guid value)
     {
         if (value == Guid.Empty)
+        {
             throw new ArgumentException("CustomerReference cannot be empty", nameof(value));
+        }
+
         Value = value;
     }
 

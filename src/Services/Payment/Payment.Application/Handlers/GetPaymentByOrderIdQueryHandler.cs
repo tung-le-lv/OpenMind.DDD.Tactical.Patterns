@@ -15,7 +15,9 @@ public class GetPaymentByOrderIdQueryHandler(IPaymentRepository paymentRepositor
             cancellationToken);
 
         if (payment == null)
+        {
             return null;
+        }
 
         return MapToDto(payment);
     }

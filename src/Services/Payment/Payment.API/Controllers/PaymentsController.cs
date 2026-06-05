@@ -18,7 +18,9 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
         var result = await mediator.Send(new GetPaymentByIdQuery(paymentId), cancellationToken);
 
         if (result == null)
+        {
             return NotFound();
+        }
 
         return Ok(result);
     }
@@ -31,7 +33,9 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
         var result = await mediator.Send(new GetPaymentByOrderIdQuery(orderId), cancellationToken);
 
         if (result == null)
+        {
             return NotFound();
+        }
 
         return Ok(result);
     }
@@ -83,7 +87,9 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
             var result = await mediator.Send(new ProcessPaymentCommand(paymentId), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogInformation("Payment {PaymentId} processing started", paymentId);
             return Ok();
@@ -108,7 +114,9 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
             var result = await mediator.Send(new CompletePaymentCommand(paymentId, request.TransactionId), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogInformation("Payment {PaymentId} completed", paymentId);
             return Ok();
@@ -132,7 +140,9 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
             var result = await mediator.Send(new FailPaymentCommand(paymentId, request.Reason), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogWarning("Payment {PaymentId} failed. Reason: {Reason}", paymentId, request.Reason);
             return Ok();
@@ -157,7 +167,9 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
             var result = await mediator.Send(new RefundPaymentCommand(paymentId, request.Reason), cancellationToken);
 
             if (!result)
+            {
                 return NotFound();
+            }
 
             logger.LogInformation("Payment {PaymentId} refunded. Reason: {Reason}", paymentId, request.Reason);
             return Ok();

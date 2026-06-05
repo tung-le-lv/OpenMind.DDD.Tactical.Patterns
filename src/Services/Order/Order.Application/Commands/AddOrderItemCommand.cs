@@ -12,7 +12,9 @@ public class AddOrderItemCommandHandler(IOrderRepository orderRepository) : IReq
     {
         var order = await orderRepository.GetByIdAsync(OrderId.From(request.OrderId), cancellationToken);
         if (order == null)
+        {
             return false;
+        }
 
         order.AddItem(
             ProductId.From(request.ProductId),

@@ -162,7 +162,9 @@ public class Order : AggregateRoot<OrderId>
 
         var item = _orderItems.FirstOrDefault(x => x.Id == itemId);
         if (item == null)
+        {
             throw new DomainException($"Order item {itemId} not found");
+        }
 
         _orderItems.Remove(item);
         SetModified();
@@ -179,7 +181,10 @@ public class Order : AggregateRoot<OrderId>
         {
             // Assertion: check precondition before mutating — no rollback needed.
             if (_orderItems.Count <= 1)
+            {
                 throw new DomainException("Cannot remove the last item from an order.");
+            }
+
             _orderItems.Remove(item);
         }
         else
@@ -260,7 +265,10 @@ public class Order : AggregateRoot<OrderId>
         if (!IsEligibleForSubmission(minimumOrderValue))
         {
             if (!Status.CanBeSubmitted())
+            {
                 throw new DomainException($"Cannot submit an order in {Status.Name} status");
+            }
+
             CheckRule(new OrderMustHaveAtLeastOneItemRule(_orderItems.Count));
             throw new DomainException($"Order total must be at least {minimumOrderValue:C}");
         }
@@ -280,7 +288,9 @@ public class Order : AggregateRoot<OrderId>
     public void MarkAsPaid(DateTime paidAt)
     {
         if (!Status.CanBePaid())
+        {
             throw new DomainException($"Cannot mark order as paid in {Status.Name} status");
+        }
 
         Status = OrderStatus.Paid;
         PaidAt = paidAt;
@@ -296,7 +306,9 @@ public class Order : AggregateRoot<OrderId>
     public void MarkPaymentFailed(string reason)
     {
         if (!Status.CanMarkPaymentFailed())
+        {
             throw new DomainException($"Cannot mark payment as failed for order in {Status.Name} status");
+        }
 
         Status = OrderStatus.PaymentFailed;
         SetModified();
@@ -310,7 +322,9 @@ public class Order : AggregateRoot<OrderId>
     {
         var readySpec = new OrderReadyForProcessingSpecification();
         if (!readySpec.IsSatisfiedBy(this))
+        {
             throw new DomainException("Only paid orders can be processed");
+        }
 
         Status = OrderStatus.Processing;
         SetModified();
@@ -321,7 +335,9 @@ public class Order : AggregateRoot<OrderId>
     public void Ship()
     {
         if (!Status.CanBeShipped())
+        {
             throw new DomainException("Only processing orders can be shipped");
+        }
 
         Status = OrderStatus.Shipped;
         SetModified();
@@ -334,7 +350,9 @@ public class Order : AggregateRoot<OrderId>
     public void MarkAsDelivered()
     {
         if (!Status.CanBeDelivered())
+        {
             throw new DomainException("Only shipped orders can be marked as delivered");
+        }
 
         Status = OrderStatus.Delivered;
         SetModified();
@@ -363,7 +381,9 @@ public class Order : AggregateRoot<OrderId>
     private Money CalculateTotalAmount()
     {
         if (_orderItems.Count == 0)
+        {
             return Money.Zero(Currency);
+        }
 
         return _orderItems
             .Select(x => x.Total)
