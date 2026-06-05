@@ -1,27 +1,27 @@
 # Domain-Driven Design
-
-An implementation of Domain-Driven Design Tactical Patterns.
+Demonstrate DDD strategic and tactical design.
 
 ## Table of Contents
 
 - [References](#references)
 - [Tactical Design Patterns](#tactical-design-patterns)
-  - [Entities](#entities)
-  - [Value Objects](#value-objects)
-  - [Aggregates](#aggregates)
-  - [Domain Events](#domain-events)
-  - [Repository Pattern](#repository-pattern)
-  - [Domain Services](#domain-services)
-  - [Specification Pattern](#specification-pattern)
-  - [Factory Pattern](#factory-pattern)
-  - [Enumeration Pattern](#enumeration-pattern)
-- [Supple Design Patterns](#supple-design-patterns)
-  - [Intention-Revealing Interfaces](#intention-revealing-interfaces)
-  - [Side-Effect-Free Functions](#side-effect-free-functions)
-  - [Assertions](#assertions)
-  - [Conceptual Contours](#conceptual-contours)
-  - [Standalone Class](#standalone-class)
-  - [Closure of Operations](#closure-of-operations)
+  - [The Building Blocks](#the-building-blocks)
+    - [Entities](#entities)
+    - [Value Objects](#value-objects)
+    - [Aggregates](#aggregates)
+    - [Domain Events](#domain-events)
+    - [Repository Pattern](#repository-pattern)
+    - [Domain Services](#domain-services)
+    - [Specification Pattern](#specification-pattern)
+    - [Factory Pattern](#factory-pattern)
+    - [Enumeration Pattern](#enumeration-pattern)
+  - [Supple Design Patterns](#supple-design-patterns)
+    - [Intention-Revealing Interfaces](#intention-revealing-interfaces)
+    - [Side-Effect-Free Functions](#side-effect-free-functions)
+    - [Assertions](#assertions)
+    - [Conceptual Contours](#conceptual-contours)
+    - [Standalone Class](#standalone-class)
+    - [Closure of Operations](#closure-of-operations)
 - [Strategic Design](#strategic-design)
   - [Ubiquitous Language](#ubiquitous-language)
   - [Bounded Contexts](#bounded-contexts)
@@ -45,7 +45,9 @@ In military terms, strategy is the big-picture planning: which battles to fight,
 
 Evans mapped this directly onto domain modeling. Strategic design covers the system-wide, coarse-grained, long-lived decisions — where to draw bounded context boundaries, how contexts and teams relate (the context map, ACL, shared kernel), and which subdomain is your core and therefore deserves your best modeling effort. Tactical design is the hands-on, in-the-trenches work of building a model once you're inside a boundary: the concrete code-level building blocks like entities, value objects, aggregates, repositories. They're the tools you reach for to actually implement the model, the same way tactics are what you use to win the battle you're currently in.
 
-### Entities
+### The Building Blocks
+
+#### Entities
 
 > *"Some objects are not defined primarily by their attributes. They represent a thread of identity that runs through time and often across distinct representations."*
 > — Evans, Domain-Driven Design, Ch. 5
@@ -91,7 +93,7 @@ public class Order : AggregateRoot<OrderId>
 
 ---
 
-### Value Objects
+#### Value Objects
 
 > *"Many objects have no conceptual identity. These objects describe some characteristic of a thing."*
 > — Evans, Domain-Driven Design, Ch. 5
@@ -128,7 +130,7 @@ public class Money : ValueObject
 
 ---
 
-### Aggregates
+#### Aggregates
 
 > *"Cluster the entities and value objects into aggregates and define boundaries around each. Choose one entity to be the root of each aggregate, and control all access to the objects inside the boundary through the root."*
 > — Evans, Domain-Driven Design, Ch. 6
@@ -184,7 +186,7 @@ public class Order : AggregateRoot<OrderId>
 
 ---
 
-### Domain Events
+#### Domain Events
 
 > *"Model information about activity in the domain as a series of discrete events. Represent each event as a domain object. ... A domain event is a full-fledged part of the domain model, a representation of something that happened in the domain."*
 > — Evans, Domain-Driven Design (2003 edition addendum); also Vernon, IDDD, Ch. 8
@@ -221,7 +223,7 @@ The application layer's unit of work dispatches collected events after the state
 
 ---
 
-### Repository Pattern
+#### Repository Pattern
 
 > *"For each type of object that needs global access, create an object that can provide the illusion of an in-memory collection of all objects of that type."*
 > — Evans, Domain-Driven Design, Ch. 6
@@ -262,7 +264,7 @@ public async Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellatio
 
 ---
 
-### Domain Services
+#### Domain Services
 
 > *"When a significant process or transformation in the domain is not a natural responsibility of an entity or value object, add an operation to the model as a standalone interface declared as a service."*
 > — Evans, Domain-Driven Design, Ch. 5
@@ -309,7 +311,7 @@ public class OrderConsolidationService : IOrderConsolidationService
 
 ---
 
-### Specification Pattern
+#### Specification Pattern
 
 > *"Create explicit predicate-like value objects for specialized purposes. A specification is a predicate that determines if an object does or does not satisfy some criteria."*
 > — Evans, Domain-Driven Design, Ch. 9
@@ -350,7 +352,7 @@ var orders = await repository.FindAsync(spec);
 
 ---
 
-### Factory Pattern
+#### Factory Pattern
 
 > *"When creation of an entire, internally consistent aggregate, or a large value object, becomes complicated or reveals too much of the internal structure, factories provide encapsulation."*
 > — Evans, Domain-Driven Design, Ch. 6
@@ -406,7 +408,7 @@ public class OrderFactory : IFactory<Order, CreateOrderData>
 
 ---
 
-### Enumeration Pattern
+#### Enumeration Pattern
 
 Evans describes **type-safe status values** as a key tool for eliminating primitive obsession in the domain model. Using raw integers or magic strings for status forces domain logic to be expressed as comparisons against literals scattered throughout the codebase — the meaning lives in the developer's head, not in the model. By replacing them with named types that carry their own behaviour, the status itself becomes a domain concept.
 
@@ -442,13 +444,13 @@ public void Cancel(string reason)
 }
 ```
 
-## Supple Design Patterns
+### Supple Design Patterns
 
 Supple Design is a set of complementary patterns from Evans' Blue Book (Ch. 10) that make a domain model easier to work with safely. Where tactical patterns answer *what* to build, Supple Design answers *how* to shape the code so the model stays expressive and resistant to corruption over time.
 
 ---
 
-### Intention-Revealing Interfaces
+#### Intention-Revealing Interfaces
 
 **What:** Name every method and type so the *why* is obvious from the signature alone — no reader should need to look inside to understand what a call means in domain terms.
 
@@ -493,7 +495,7 @@ public bool IsGreaterThanOrEqualTo(Money threshold)
 
 ---
 
-### Side-Effect-Free Functions
+#### Side-Effect-Free Functions
 
 **What:** Separate computation from mutation. Pure functions take inputs, return a result, and change *nothing*. Commands mutate state but delegate all non-trivial calculations to pure functions first.
 
@@ -552,7 +554,7 @@ public Money ApplyDiscount(Percentage d) => new(Amount - d.ApplyTo(Amount), Curr
 
 ---
 
-### Assertions
+#### Assertions
 
 **What:** State postconditions explicitly after every mutation so that the system's guarantees are visible in the code, not just in the developer's head. Use `Debug.Assert` for invariants that *must* hold immediately after a state change — they document what the next reader can count on.
 
@@ -596,7 +598,7 @@ Debug.Assert(!Total.IsZero || discount == itemTotal,
 
 ---
 
-### Conceptual Contours
+#### Conceptual Contours
 
 **What:** Decompose logic at the natural seams of the domain, not at arbitrary technical boundaries. When a concept in the domain has a clear name and meaning, it deserves its own method or type — even if the implementation is a single line.
 
@@ -645,7 +647,7 @@ public void Consolidate(Order sourceOrder, Order targetOrder)
 
 ---
 
-### Standalone Class
+#### Standalone Class
 
 **What:** A class is standalone when it can be fully understood and tested in isolation — it imports nothing from the broader domain model, only primitive types or base classes from a shared kernel.
 
@@ -695,7 +697,7 @@ public class OrderItem : Entity<OrderItemId>
 
 ---
 
-### Closure of Operations
+#### Closure of Operations
 
 **What:** Design operations so that their return type is the same as the types of their arguments — the operation stays "inside" the concept. This allows unlimited chaining without ever crossing a type boundary.
 
