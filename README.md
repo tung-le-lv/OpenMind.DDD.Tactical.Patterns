@@ -47,6 +47,8 @@ Evans mapped this directly onto domain modeling. Strategic design covers the sys
 
 ### The Building Blocks
 
+![Building Blocks](docs/building-blocks.png)
+
 #### Entities
 
 > *"Some objects are not defined primarily by their attributes. They represent a thread of identity that runs through time and often across distinct representations."*
@@ -448,6 +450,8 @@ public void Cancel(string reason)
 
 Supple Design is a set of complementary patterns from Evans' Blue Book (Ch. 10) that make a domain model easier to work with safely. Where tactical patterns answer *what* to build, Supple Design answers *how* to shape the code so the model stays expressive and resistant to corruption over time.
 
+![Supple Design](docs/supple-design.png)
+
 ---
 
 #### Intention-Revealing Interfaces
@@ -750,6 +754,8 @@ internal Money TotalForQuantity(int quantity) => UnitPrice.Multiply(quantity) - 
 > — Evans, Domain-Driven Design, Ch. 14
 
 Where tactical design deals with the building blocks inside a single model, strategic design deals with the large-scale structure of the entire system — how to carve it into bounded contexts, where the boundaries sit, and how contexts relate to each other. Vernon distills this into three essential questions (DDD Distilled, Ch. 2): what are your core, supporting, and generic subdomains? where do your bounded context boundaries sit? and how do your bounded contexts interact?
+
+![Bounded Contexts](docs/bounded-contexts.png)
 
 ---
 
