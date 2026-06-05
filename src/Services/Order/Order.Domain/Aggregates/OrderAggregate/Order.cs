@@ -73,6 +73,39 @@ public class Order : AggregateRoot<OrderId>
 
     #region Factory Methods
 
+    /// Rehydrates an Order from a persistence document. No domain events are emitted.
+    public static Order Reconstitute(
+        OrderId id,
+        CustomerId customerId,
+        Address shippingAddress,
+        OrderStatus status,
+        DateTime createdAt,
+        DateTime? modifiedAt,
+        DateTime? submittedAt,
+        DateTime? paidAt,
+        string? notes,
+        string currency,
+        int version,
+        IEnumerable<OrderItem> orderItems)
+    {
+        var order = new Order
+        {
+            Id              = id,
+            CustomerId      = customerId,
+            ShippingAddress = shippingAddress,
+            Status          = status,
+            CreatedAt       = createdAt,
+            ModifiedAt      = modifiedAt,
+            SubmittedAt     = submittedAt,
+            PaidAt          = paidAt,
+            Notes           = notes,
+            Currency        = currency,
+            Version         = version,
+            _orderItems = [.. orderItems]
+        };
+        return order;
+    }
+
     /// <summary>
     /// Factory method ensures all invariants are met at creation time.
     /// </summary>

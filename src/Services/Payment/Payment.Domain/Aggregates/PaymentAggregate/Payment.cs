@@ -36,6 +36,41 @@ public class Payment : AggregateRoot<PaymentId>
 
     #region Factory Methods
 
+    /// Rehydrates a Payment from a persistence document. No domain events are emitted.
+    public static Payment Reconstitute(
+        PaymentId id,
+        OrderReference orderId,
+        CustomerReference customerId,
+        Money amount,
+        PaymentStatus status,
+        PaymentMethod method,
+        CardDetails? cardDetails,
+        string? transactionId,
+        string? failureReason,
+        DateTime createdAt,
+        DateTime? processedAt,
+        DateTime? completedAt,
+        int version)
+    {
+        var payment = new Payment
+        {
+            Id            = id,
+            OrderId       = orderId,
+            CustomerId    = customerId,
+            Amount        = amount,
+            Status        = status,
+            Method        = method,
+            CardDetails   = cardDetails,
+            TransactionId = transactionId,
+            FailureReason = failureReason,
+            CreatedAt     = createdAt,
+            ProcessedAt   = processedAt,
+            CompletedAt   = completedAt,
+            Version       = version
+        };
+        return payment;
+    }
+
     /// <summary>
     /// Factory method - ensures all required data is present and invariants are met.
     /// </summary>

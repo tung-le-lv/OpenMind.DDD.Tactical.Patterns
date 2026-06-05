@@ -36,6 +36,25 @@ public class OrderItem : Entity<OrderItemId>
 
     private OrderItem() { }
 
+    public static OrderItem Reconstitute(
+        OrderItemId id,
+        ProductId productId,
+        string productName,
+        Money unitPrice,
+        int quantity,
+        Money discount)
+    {
+        return new OrderItem
+        {
+            Id          = id,
+            ProductId   = productId,
+            ProductName = productName,
+            UnitPrice   = unitPrice,
+            Quantity    = quantity,
+            Discount    = discount
+        };
+    }
+
     internal static OrderItem Create(
         ProductId productId,
         string productName,

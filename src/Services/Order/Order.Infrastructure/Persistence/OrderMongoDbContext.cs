@@ -1,6 +1,7 @@
 using BuildingBlocks.Domain;
 using MediatR;
 using MongoDB.Driver;
+using Order.Infrastructure.Persistence.Documents;
 
 namespace Order.Infrastructure.Persistence;
 
@@ -9,8 +10,8 @@ public class OrderMongoDbContext(IMongoDatabase database, IMediator mediator) : 
     private readonly List<Func<Task>> _commands = new();
     private readonly List<IDomainEvent> _domainEvents = new();
 
-    public IMongoCollection<Domain.Aggregates.OrderAggregate.Order> Orders =>
-        database.GetCollection<Domain.Aggregates.OrderAggregate.Order>("orders");
+    public IMongoCollection<OrderDocument> Orders =>
+        database.GetCollection<OrderDocument>("orders");
 
     public void AddCommand(Func<Task> command)
     {
@@ -53,11 +54,5 @@ public class OrderMongoDbContext(IMongoDatabase database, IMediator mediator) : 
         _commands.Clear();
         _domainEvents.Clear();
     }
-}
-
-public class MongoDbSettings
-{
-    public string? ConnectionString { get; set; }
-    public string? DatabaseName { get; set; }
 }
 

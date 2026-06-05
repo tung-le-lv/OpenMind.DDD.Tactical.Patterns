@@ -1,6 +1,7 @@
 using BuildingBlocks.Domain;
 using MediatR;
 using MongoDB.Driver;
+using Payment.Infrastructure.Persistence.Documents;
 
 namespace Payment.Infrastructure.Persistence;
 
@@ -9,8 +10,8 @@ public class PaymentMongoDbContext(IMongoDatabase database, IMediator mediator) 
     private readonly List<Func<Task>> _commands = [];
     private readonly List<IDomainEvent> _domainEvents = [];
 
-    public IMongoCollection<Domain.Aggregates.PaymentAggregate.Payment> Payments =>
-        database.GetCollection<Domain.Aggregates.PaymentAggregate.Payment>("payments");
+    public IMongoCollection<PaymentDocument> Payments =>
+        database.GetCollection<PaymentDocument>("payments");
 
     public void AddCommand(Func<Task> command)
     {
