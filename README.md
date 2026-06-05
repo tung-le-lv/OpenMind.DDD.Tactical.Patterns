@@ -22,7 +22,15 @@ An implementation of Domain-Driven Design Tactical Patterns.
   - [Conceptual Contours](#conceptual-contours)
   - [Standalone Class](#standalone-class)
   - [Closure of Operations](#closure-of-operations)
-- [Integration Between Bounded Contexts](#integration-between-bounded-contexts-context-mapping)
+- [Strategic Design](#strategic-design)
+  - [Ubiquitous Language](#ubiquitous-language)
+  - [Bounded Contexts](#bounded-contexts)
+  - [Context Map: Order ↔ Payment](#context-map-order--payment)
+    - [Open Host Service](#open-host-service)
+    - [Published Language](#published-language)
+    - [Anti-Corruption Layer](#anti-corruption-layer)
+    - [Partnership](#partnership)
+    - [Event Flow](#event-flow)
 
 ## References
 
@@ -734,35 +742,359 @@ internal Money TotalForQuantity(int quantity) => UnitPrice.Multiply(quantity) - 
 
 ---
 
-## Integration Between Bounded Contexts (Context Mapping)
+## Strategic Design
 
-### Published Language + Anti-Corruption Layer
+> *"Strategic design is a set of principles for maintaining model integrity, distillation of the domain model, and working with multiple models."*
+> — Evans, Domain-Driven Design, Ch. 14
 
-1. **Order Submitted**: Order service raises `OrderSubmittedDomainEvent`
-2. **Domain Event Handler**: Converts to `OrderSubmittedIntegrationEvent`
-3. **Event Bus**: Publishes integration event
-4. **Payment Handler**: Creates and processes payment
-5. **Payment Completed**: Payment service raises `PaymentCompletedDomainEvent`
-6. **Integration Event**: `PaymentCompletedIntegrationEvent` published
-7. **Order Handler**: Updates order status to Paid
+Where tactical design deals with the building blocks inside a single model, strategic design deals with the large-scale structure of the entire system — how to carve it into bounded contexts, where the boundaries sit, and how contexts relate to each other. Vernon distills this into three essential questions (DDD Distilled, Ch. 2): what are your core, supporting, and generic subdomains? where do your bounded context boundaries sit? and how do your bounded contexts interact?
+
+---
+
+### Ubiquitous Language
+
+> *"Use the model as the backbone of a language. Commit the team to exercising that language relentlessly in all communication within the team and in the code. Use the same language in diagrams, writing, and especially speech. Iron out difficulties by experimenting with alternative expressions, which reflect alternative models. Then refactor the code, renaming classes, methods, and modules to conform to the new model. Resolve confusion over terms in conversation, in just the way we come to agree on the meaning of ordinary words."*
+> — Evans, Domain-Driven Design, Ch. 2
+
+Ubiquitous Language is the single most important practice in DDD. It is a shared, precise vocabulary built collaboratively by developers and domain experts — not a translation layer between two separate vocabularies, but one language used by everyone, everywhere, without compromise.
+
+Evans introduces it in Chapter 2 as the antidote to a pervasive problem: developers speak in technical terms (tables, objects, algorithms), domain experts speak in business terms (orders, customers, fulfilment), and the gap between the two causes a constant, invisible translation cost. Requirements get lost in translation. The model diverges from what the business actually means. Bugs are born from misunderstandings that neither side even notices.
+
+The Ubiquitous Language solves this by making the domain model the source of truth for language — and making the code the authoritative expression of that language:
+
+- If the domain expert calls it "submitting" an order, the code says `order.Submit()`, not `order.SetStatus(2)` or `order.UpdateState("submitted")`
+- If the business says an order "cannot be cancelled after it has shipped", that rule is named `OrderCannotBeCancelledAfterShippingRule`, not `StatusValidationRule`
+- If payment experts talk about a payment "completing", the domain event is `PaymentCompletedDomainEvent`, not `PaymentStatusChangedEvent`
+
+**Vernon** reinforces this in *DDD Distilled* (Ch. 1): the Ubiquitous Language is not documentation or a glossary — it is spoken aloud in every meeting, written in every email, and expressed in every line of code. When the language in conversation starts to diverge from the language in the code, that is a signal the model is wrong and needs to be corrected.
+
+**The language is bounded.** Evans is explicit (Ch. 14) that Ubiquitous Language is scoped to a Bounded Context. The same word can mean something different in two different contexts, and that is intentional — forcing a single global definition across all contexts produces a bloated, compromised model that serves no context well.
+
+`Money` is the clearest example in this codebase. Both contexts have a `Money` type, but the questions each context asks of money are fundamentally different — and the operations on each type reflect that:
+
+```csharp
+// Order.Domain.Money — "how much does this cost?"
+// Needs arithmetic to build totals from items and apply promotions.
+Money lineTotal   = unitPrice.Multiply(quantity);          // $19.99 × 3 = $59.97
+Money orderTotal  = lineTotal.Add(shippingCost);           // $59.97 + $5.00 = $64.97
+Money discounted  = orderTotal.ApplyDiscount(tenPercent);  // $64.97 − 10% = $58.47
+bool  meetsMin    = orderTotal.IsGreaterThanOrEqualTo(Money.FromDecimal(10m, "USD"));
+
+// Payment.Domain.Money — "can I charge this, and how do I hand it to a processor?"
+// Needs processor-specific operations that Order has no concept of.
+bool isChargeable  = amount.IsChargeable();    // Stripe rejects charges below $0.50
+long gatewayAmount = amount.ToMinorUnits();    // Stripe requires 5897, not 58.97
+```
+
+`Order.Money` never needs `IsChargeable` or `ToMinorUnits` — those are payment gateway concerns. `Payment.Money` never needs `Multiply` or `ApplyDiscount` — payment amounts arrive pre-calculated from the Order context; the Payment domain does not re-derive them. A single shared `Money` type would have to carry all six operations, polluting each context with the other's concerns and blurring the boundary between them.
+
+**The language and the model co-evolve.** When a domain expert introduces a new term, or when a conversation reveals that an existing term was imprecise, the code changes to match. Renaming a class or method to align with a better term is not cosmetic refactoring — it is the model improving. Evans calls this "continuous refinement of the model through the language" (Ch. 2).
+
+**In this codebase** — every name is drawn from the domain, not from implementation concerns:
+
+```csharp
+// Method names speak the business language — not technical verbs
+order.Submit();
+order.Cancel(reason);
+order.MarkAsPaid(paidAt);
+order.StartProcessing();
+payment.Complete(transactionId);
+payment.Refund(reason);
+
+// Business rules are named after the policy they enforce
+new OrderCannotBeCancelledAfterShippingRule(status)
+new OrderMustHaveAtLeastOneItemRule(itemCount)
+new CardMustNotBeExpiredRule(cardDetails)
+
+// Domain events use past tense — they are facts that occurred
+new OrderSubmittedDomainEvent(id, customerId, totalAmount, currency)
+new PaymentCompletedDomainEvent(id, orderId, amount, completedAt)
+new OrderCancelledDomainEvent(id, reason)
+
+// Status predicates read like business sentences
+status.CanBeSubmitted()
+status.CanBeCancelled()
+order.IsEligibleForCancellation()
+
+// Value objects are named after the concept, not the data type
+Money unitPrice          // not: decimal price
+Address shippingAddress  // not: string[] addressLines
+OrderReference orderId   // not: Guid foreignOrderId
+```
+
+The contrast between this and a model without Ubiquitous Language is stark. Without it, the same logic might look like:
+
+```csharp
+// Without Ubiquitous Language — technical names, no domain meaning
+entity.SetStatus(3);
+if (entity.StatusId != 5 && entity.StatusId != 6) { ... }
+new ValidationRule("status_check");
+new Event("STATUS_CHANGED", entity.Id, entity.StatusId);
+```
+
+The code becomes a translation problem. Every reader must maintain a mental mapping from technical identifiers to business meaning. The Ubiquitous Language eliminates that mapping entirely — the code reads like the domain.
+
+---
+
+### Bounded Contexts
+
+> *"A bounded context is a semantic contextual boundary within which each component of the software model has a specific meaning and does specific things."*
+> — Vernon, Domain-Driven Design Distilled, Ch. 2
+
+A Bounded Context is an explicit boundary within which a domain model applies. Inside the boundary every term in the ubiquitous language has one precise meaning. The same word used in two different bounded contexts may mean something entirely different — `Money` in the Order context supports arithmetic for building totals (`Multiply`, `ApplyDiscount`), while `Money` in the Payment context supports charging semantics (`IsChargeable`, `ToMinorUnits`). Same word, different model, different operations — because each context owns its own meaning of "money".
+
+**The same real-world thing, modelled differently in each context.**
+
+A customer purchase is a single real-world event, but each bounded context models it through its own lens — capturing only the aspects that are relevant to its own work and ignoring everything else.
+
+In this codebase, the `Payment` aggregate in the Payment context is the payment-specific *representation* of what the Order context calls an `Order`. When an order is submitted, the Payment context does not import the `Order` aggregate or any of its types. Instead it creates its own model — `Payment` — that captures exactly what the payment domain cares about: who to charge, how much, which method, and what happened during processing. The shopping cart, the item list, the shipping address — none of that crosses the boundary, because none of it is relevant to taking a payment.
+
+| Real-world concept | Order context sees | Payment context sees |
+|---|---|---|
+| A customer purchase | `Order` — items, address, fulfilment status | `Payment` — charge amount, method, transaction ID |
+| The current state | `OrderStatus` — Draft → Submitted → Paid → Shipped | `PaymentStatus` — Pending → Processing → Completed |
+
+Each context owns a complete, self-sufficient model of the parts of the domain it is responsible for. The same underlying concept — a purchase by a customer — is described in richer or simpler terms depending on what each context needs to do with it. Evans calls this *model isolation*: the goal is not to build one universal model of everything, but to build the right model for each context.
+
+**What happens without bounded contexts — the god class.**
+
+Without explicit boundaries, the natural pressure is to keep adding to one central model until it carries everything. The `Order` class becomes the universal fact about a purchase — shopping concerns, payment concerns, shipping concerns, all in one place:
+
+```csharp
+// God class — one model trying to serve every context
+public class Order
+{
+    // Order context
+    public Guid Id { get; set; }
+    public List<OrderItem> Items { get; set; }
+    public Address ShippingAddress { get; set; }
+    public string OrderStatus { get; set; }       // "Draft", "Submitted", "Shipped" ...
+
+    // Payment context leaked in
+    public string PaymentStatus { get; set; }     // "Pending", "Processing", "Completed" ...
+    public string PaymentMethod { get; set; }
+    public string? CardLast4Digits { get; set; }
+    public string? CardType { get; set; }
+    public int? CardExpiryMonth { get; set; }
+    public int? CardExpiryYear { get; set; }
+    public string? TransactionId { get; set; }
+    public string? FailureReason { get; set; }
+    public long? GatewayAmountInMinorUnits { get; set; }
+
+    // Methods from both contexts mixed together
+    public void Submit() { ... }
+    public void AddItem(OrderItem item) { ... }
+    public void ProcessPayment() { ... }
+    public void CompletePayment(string transactionId) { ... }
+    public void FailPayment(string reason) { ... }
+    public void Ship() { ... }
+    public void RefundPayment(string reason) { ... }
+}
+```
+
+The bounded context solution is not to split the class arbitrarily — it is to recognise that order management and payment processing are genuinely different domains with different experts, different invariants, and different rates of change, and to give each its own model that speaks its own language cleanly.
+
+**Why bounded contexts exist — the god class and the Big Ball of Mud.**
+
+Without explicit boundaries, every new feature gets added to the existing model rather than asking *"does this belong here?"*. The model grows without friction — a payment field here, a shipping rule there — and each addition seems reasonable in isolation. The god class above is how this manifests at the class level. At the system level, Vernon calls the end result a Big Ball of Mud (*DDD Distilled*, Ch. 2): a domain model that has lost the integrity of its ubiquitous language because it is trying to mean too many things to too many people. Nobody makes a conscious decision to build a mess. The mess is the result of the absence of a deliberate decision about where the boundary sits.
+
+Evans acknowledges in the Blue Book (Ch. 14) that the Big Ball of Mud is the most common architecture in production systems and the reality most teams inherit. His advice: don't pretend it isn't there — draw it explicitly on your context map, put an Anti-Corruption Layer around it, and carve bounded contexts out incrementally rather than attempting a big-bang rewrite.
+
+That is exactly why Vernon argues that defining bounded context boundaries — before writing any code — is the most important strategic decision a team makes. Without the boundary, the model has no way to say no.
+
+This codebase has two bounded contexts:
+
+| Bounded Context | Responsibility | Aggregate Root |
+|---|---|---|
+| **Order** | Manages the customer's shopping lifecycle — draft, submitted, paid, shipped, delivered, cancelled | `Order` |
+| **Payment** | Models the payment-specific view of a submitted order — pending, processing, completed, failed, refunded, cancelled | `Payment` |
+
+Each context lives in its own project set (`Order.*`, `Payment.*`), has its own domain model, its own repository, and its own persistence collection. Neither directly imports the other's domain types.
+
+---
+
+### Context Map: Order ↔ Payment
+
+A Context Map documents how bounded contexts relate — it makes the integration contracts, team relationships, and translation responsibilities explicit. Evans introduced context maps in Ch. 14; Vernon gives a practical catalogue of the relationship patterns in *IDDD* Ch. 3.
+
+The relationship between Order and Payment uses four patterns together:
 
 ```
-┌─────────────────┐                    ┌─────────────────┐
-│  Order Service  │                    │ Payment Service │
-├─────────────────┤                    ├─────────────────┤
-│ Order.Submit()  │                    │                 │
-│       │         │                    │                 │
-│       ▼         │                    │                 │
-│ OrderSubmitted  │ ──Integration──►   │ Create Payment  │
-│ DomainEvent     │    Event           │       │         │
-│                 │                    │       ▼         │
-│                 │                    │ Process Payment │
-│                 │                    │       │         │
-│                 │                    │       ▼         │
-│ MarkAsPaid()    │ ◄──Integration──   │ PaymentCompleted│
-│       │         │    Event           │ DomainEvent     │
-│       ▼         │                    │                 │
-│ Status = Paid   │                    │                 │
-└─────────────────┘                    └─────────────────┘
+  Order Service                              Payment Service
+  ┌─────────────────────────────┐            ┌──────────────────────────────┐
+  │  [Open Host Service]        │            │  [Open Host Service]         │
+  │  OrderSubmittedIntegration  │──────────► │  [Anti-Corruption Layer]     │
+  │  Event                      │            │  OrderReference (not OrderId)│
+  │                             │            │                              │
+  │  [Anti-Corruption Layer]    │            │  [Open Host Service]         │
+  │  ExternalOrderTranslator    │◄────────── │  PaymentCompletedIntegration │
+  │                             │            │  Event / PaymentFailed       │
+  └─────────────────────────────┘            └──────────────────────────────┘
+              ◄────────── Partnership ──────────►
 ```
+
+---
+
+#### Open Host Service
+
+> *"Define a protocol that gives access to your subsystem as a set of services. Open the protocol so that all who need to integrate with you can use it."*
+> — Evans, Domain-Driven Design, Ch. 14
+
+An Open Host Service (OHS) exposes a bounded context's capabilities through a well-defined, stable protocol. Any consumer can integrate with it without requiring a custom translation built by the provider. When the protocol is formally documented so consumers can use it independently, that document is the Published Language.
+
+**Both services act as Open Host Services** — each opens its domain to other contexts by publishing integration events on a shared bus. There is no custom point-to-point connector; any service that subscribes to the event schema can consume it.
+
+**Order service** hosts:
+```csharp
+// Order.IntegrationEvents/OrderSubmittedIntegrationEvent.cs
+public record OrderSubmittedIntegrationEvent(
+    Guid OrderId,
+    Guid CustomerId,
+    decimal TotalAmount,
+    string Currency) : IntegrationEvent;
+```
+
+**Payment service** hosts:
+```csharp
+// Payment.IntegrationEvents/PaymentCompletedIntegrationEvent.cs
+public record PaymentCompletedIntegrationEvent(
+    Guid PaymentId,
+    Guid OrderId,
+    decimal Amount,
+    DateTime CompletedAt) : IntegrationEvent;
+
+// Payment.IntegrationEvents/PaymentFailedIntegrationEvent.cs
+public record PaymentFailedIntegrationEvent(
+    Guid PaymentId,
+    Guid OrderId,
+    string Reason) : IntegrationEvent;
+```
+
+---
+
+#### Published Language
+
+> *"Use a well-documented shared language that can express the necessary domain information as a common medium of communication, translating as necessary into and out of that language."*
+> — Evans, Domain-Driven Design, Ch. 14
+
+The Published Language is the formal schema that the Open Host Service exposes. Evans pairs OHS and Published Language together — OHS is the *protocol* (how you access it), Published Language is the *format* (what you send and receive). Consumers translate from the published language into their own model; the provider never needs to know which consumers exist or how many there are.
+
+In this codebase each service owns a dedicated integration events project that acts as its published language:
+
+```
+Order.IntegrationEvents/
+  OrderSubmittedIntegrationEvent.cs   ← published language consumed by Payment
+
+Payment.IntegrationEvents/
+  PaymentCompletedIntegrationEvent.cs ← published language consumed by Order
+  PaymentFailedIntegrationEvent.cs    ← published language consumed by Order
+```
+
+Neither payload leaks internal domain types (`OrderId`, `Money`, `OrderStatus`). They carry only primitives — `Guid`, `decimal`, `string`, `DateTime` — so consumers are never forced to take a dependency on the provider's domain model.
+
+---
+
+#### Anti-Corruption Layer
+
+> *"Create an isolating layer to provide clients with functionality in terms of their own domain model. The layer talks to the other system through its existing interface, requiring little or no modification to the other system. Internally, the layer translates in both directions as necessary between the two models."*
+> — Evans, Domain-Driven Design, Ch. 14
+
+An Anti-Corruption Layer (ACL) protects a bounded context's internal model from being polluted by the concepts of another context. Without it, a downstream context gradually conforms to its upstream neighbour's model — importing its types, its naming, its assumptions. The ACL translates at the boundary so the internal model stays pure.
+
+**Payment's ACL — identity value objects:**
+
+Rather than importing `OrderId` from the Order domain, Payment defines its own `OrderReference` and `CustomerReference`. The ACL translates the raw `Guid` from the integration event into Payment's local concept:
+
+```csharp
+// Payment.Domain/ValueObjects/Identifiers.cs
+// Payment's own concept — not Order's OrderId
+public class OrderReference : ValueObject
+{
+    public Guid Value { get; }
+    public static OrderReference From(Guid value) => new(value);
+}
+
+// Payment.Infrastructure/IntegrationEventHandlers
+// Translation happens at the boundary — the ACL
+var payment = Payment.CreateForOrder(
+    OrderReference.From(integrationEvent.OrderId),   // Guid → Payment's OrderReference
+    CustomerReference.From(integrationEvent.CustomerId),
+    new Money(integrationEvent.TotalAmount, integrationEvent.Currency),
+    PaymentMethod.CreditCard);
+```
+
+**Order's ACL — ExternalOrderTranslator:**
+
+The `ExternalOrderTranslator` in `Order.Application/AntiCorruption/` translates external order representations (e.g. imported from a legacy or external system) into Order's own aggregate, preventing any foreign model from entering the domain layer:
+
+```csharp
+// Order.Application/AntiCorruption/ExternalOrderTranslator.cs
+public class ExternalOrderTranslator
+{
+    public Order Translate(ExternalOrderData externalOrder)
+    {
+        // translates external concepts → Order domain model
+        // no external type escapes past this boundary
+    }
+}
+```
+
+---
+
+#### Partnership
+
+> *"When teams in two contexts will succeed or fail together, they have a cooperative relationship. ... They must plan their development schedules together so that their work is coordinated."*
+> — Evans, Domain-Driven Design, Ch. 14
+
+A Partnership exists when two bounded contexts have a mutual dependency — neither is permanently upstream or downstream. Changes in either context's published language require coordination between both teams.
+
+The Order ↔ Payment relationship is a Partnership because the event flow is bidirectional:
+
+- **Order → Payment**: Order publishes `OrderSubmittedIntegrationEvent`; Payment depends on it to create a payment
+- **Payment → Order**: Payment publishes `PaymentCompletedIntegrationEvent` / `PaymentFailedIntegrationEvent`; Order depends on them to mark the order as paid or failed
+
+```
+Order is upstream  ──OrderSubmitted──►  Payment is downstream
+Order is downstream ◄──PaymentCompleted──  Payment is upstream
+```
+
+Neither can evolve its published language independently. A change to the `OrderSubmittedIntegrationEvent` schema breaks the Payment service; a change to `PaymentCompletedIntegrationEvent` breaks the Order service. Both teams must plan releases and schema evolution together.
+
+---
+
+#### Event Flow
+
+The complete integration sequence showing all four patterns working together:
+
+```
+Order Service                    Event Bus              Payment Service
+─────────────────                ─────────              ───────────────────
+Order.Submit()
+  │
+  ▼
+OrderSubmittedDomainEvent
+  │
+  ▼ (domain event handler)
+OrderSubmittedIntegrationEvent ──────────────────────► [ACL] OrderReference.From(event.OrderId)
+[OHS — Published Language]                                     │
+                                                               ▼
+                                                         Payment.CreateForOrder()
+                                                               │
+                                                               ▼
+                                                         PaymentCompletedIntegrationEvent
+                                                         [OHS — Published Language]
+                                                               │
+[ACL] order.MarkAsPaid() ◄────────────────────────────────────┘
+  │
+  ▼
+Status = Paid
+```
+
+**Summary of patterns per role:**
+
+| Service | Role as Producer | Role as Consumer |
+|---|---|---|
+| Order | Open Host Service + Published Language | Anti-Corruption Layer |
+| Payment | Open Host Service + Published Language | Anti-Corruption Layer |
+
 

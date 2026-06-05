@@ -81,7 +81,7 @@ public class Payment : AggregateRoot<PaymentId>
         PaymentMethod method,
         CardDetails? cardDetails = null)
     {
-        CheckRule(new PaymentAmountMustBePositiveRule(amount.Amount));
+        CheckRule(new PaymentAmountMustBePositiveRule(amount));
         CheckRule(new CardPaymentMustHaveCardDetailsRule(method, cardDetails != null));
 
         var payment = new Payment
@@ -118,7 +118,7 @@ public class Payment : AggregateRoot<PaymentId>
         ProcessedAt = DateTime.UtcNow;
         IncrementVersion();
 
-        Emit(new PaymentProcessingStartedDomainEvent(Id, OrderId));
+        Emit(new PaymentProcessingStartedDomainEvent(Id, OrderId, Amount.ToMinorUnits()));
     }
 
     /// <summary>
