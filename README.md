@@ -31,118 +31,406 @@ An implementation of Domain-Driven Design Tactical Patterns.
 - Vernon, Vaughn. "Implementing Domain-Driven Design"
 
 ## Tactical Design Patterns
+Why calling it tactical design?  
+
+In military terms, strategy is the big-picture planning: which battles to fight, where to commit your forces, what the overall objective is. Tactics are the on-the-ground execution: how a unit actually maneuvers and fights to win the specific engagement in front of it. Strategy is what and where; tactics are how.  
+
+Evans mapped this directly onto domain modeling. Strategic design covers the system-wide, coarse-grained, long-lived decisions — where to draw bounded context boundaries, how contexts and teams relate (the context map, ACL, shared kernel), and which subdomain is your core and therefore deserves your best modeling effort. Tactical design is the hands-on, in-the-trenches work of building a model once you're inside a boundary: the concrete code-level building blocks like entities, value objects, aggregates, repositories. They're the tools you reach for to actually implement the model, the same way tactics are what you use to win the battle you're currently in.
 
 ### Entities
-Objects defined by their identity, not their attributes.
+
+> *"Some objects are not defined primarily by their attributes. They represent a thread of identity that runs through time and often across distinct representations."*
+> — Evans, Domain-Driven Design, Ch. 5
+
+An Entity is an object defined by its **identity**, not by the values of its attributes. Two entities are equal if and only if they share the same identity, regardless of how their other properties differ. This identity persists over the lifetime of the object — through state changes, persistence, and reconstitution from storage.
+
+Evans draws a clear contrast: a person is an entity (the same person after a name change), while a seat on an aircraft is a value object (any seat 14A is equivalent to any other 14A on the same flight). Getting this distinction right matters because it determines equality, lifecycle, and how the object is tracked.
+
+**Key characteristics (Evans, Ch. 5):**
+- Defined by a unique identity, not attributes
+- Identity persists through the full lifecycle — creation, persistence, reconstitution
+- Mutable: its attributes may change, but it remains the same object
+- Equality is identity-based (`Id == other.Id`), not structural
+
+**In this codebase** — `Entity<TId>` is the base class for all entities. It enforces identity-based equality and carries the domain event collection:
+
 ```csharp
-public abstract class Entity<TId> : IEquatable<Entity<TId>>
+// BuildingBlocks/Entity.cs
+public abstract class Entity<TId>
 {
     public TId Id { get; protected set; }
-    // Identity-based equality
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not Entity<TId> other) return false;
+        if (GetType() != other.GetType()) return false;
+        return Id.Equals(other.Id);   // identity, not attributes
+    }
 }
 ```
 
-### Value Objects
-Immutable objects defined by their attributes.
-```csharp
-public class Money : ValueObject
-{
-    public decimal Amount { get; }
-    public string Currency { get; }
-    // Attribute-based equality
-}
-```
+`Order` and `OrderItem` are both entities. An `Order` changes status, gains items, gets submitted and paid — yet it remains the same `Order` throughout because its `OrderId` never changes:
 
-### Aggregates
-Consistency boundaries with a single entry point.
 ```csharp
+// Order.Domain/Aggregates/OrderAggregate/Order.cs
 public class Order : AggregateRoot<OrderId>
 {
-    private readonly List<OrderItem> _orderItems = new();
-    // Only Order can modify OrderItems
-    public void AddItem(ProductId productId, ...) { ... }
+    public OrderStatus Status { get; private set; }   // mutable
+    public DateTime? PaidAt { get; private set; }     // mutable
+    // Id never changes — it is the identity
 }
 ```
+
+---
+
+### Value Objects
+
+> *"Many objects have no conceptual identity. These objects describe some characteristic of a thing."*
+> — Evans, Domain-Driven Design, Ch. 5
+
+A Value Object has no identity. It is defined entirely by its attributes, and two value objects with the same attributes are interchangeable — like a $5 bill: you do not care which physical note you receive, only its denomination. Because value objects have no identity to protect, they should be made **immutable**. Changing a value object's attribute does not modify it — it produces a new one.
+
+Evans lists three essential properties (Ch. 5):
+1. **Describes** a characteristic or measurement, not a thing with a lifecycle
+2. **Immutable** — no setters; all attributes are set at construction and never changed
+3. **Conceptual whole** — all attributes together express a single concept; no attribute is meaningful in isolation (`Amount` without `Currency` is meaningless)
+
+Vernon adds a practical rule: when in doubt, prefer value objects over entities. They are simpler to reason about, easier to test, safe to share and cache, and carry no persistence overhead.
+
+**In this codebase** — `Money` is the canonical value object. It wraps `Amount` and `Currency` together as a conceptual whole, is fully immutable, and uses attribute-based equality:
+
+```csharp
+// Order.Domain/ValueObjects/Money.cs
+public class Money : ValueObject
+{
+    public decimal Amount { get; }    // getter-only — immutable
+    public string Currency { get; }  // getter-only — immutable
+
+    public Money(decimal amount, string currency) { ... }  // all state set at construction
+
+    protected override IEnumerable<object?> GetEqualityComponents()
+    {
+        yield return Amount;    // equality by attributes,
+        yield return Currency;  // not by reference
+    }
+}
+```
+
+`Address`, `OrderId`, `CustomerId`, and `Percentage` are all value objects for the same reason — they describe a characteristic and carry no independent lifecycle.
+
+---
+
+### Aggregates
+
+> *"Cluster the entities and value objects into aggregates and define boundaries around each. Choose one entity to be the root of each aggregate, and control all access to the objects inside the boundary through the root."*
+> — Evans, Domain-Driven Design, Ch. 6
+
+An Aggregate is a cluster of domain objects (entities and value objects) that are treated as a **single unit** for the purpose of data change. The Aggregate Root is the only member that outside objects may hold a reference to. All access to internal objects must go through the root, which ensures that invariants spanning the entire cluster are enforced consistently.
+
+Evans defines the rules precisely (Ch. 6):
+- The root entity has global identity; internal entities have local identity only (meaningful within the aggregate, but not outside it)
+- Only the root may be obtained directly from a repository
+- External objects may hold references to the root only, never to internal entities
+- Deletions cascade to everything inside the boundary
+- Only one aggregate root is saved or loaded in a single transaction — cross-aggregate consistency is eventual
+
+This boundary is a **consistency boundary**, not a performance boundary. The question to ask is: *what invariants must be true at the end of every transaction?* Everything that participates in an invariant belongs in the same aggregate.
+
+**Vernon's four rules of thumb** (IDDD Ch. 10; DDD Distilled Ch. 5):
+
+**1. Protect business invariants inside aggregate boundaries.**
+The aggregate — and only the aggregate — is responsible for keeping its own data consistent. Any rule that spans objects inside the boundary is enforced through the root. If a rule spans two aggregate roots, it is handled through eventual consistency (domain events), not by merging the aggregates.
+
+**2. Design small aggregates.**
+Start with a single entity. Add another object to the boundary only when a genuine invariant demands it — when you must guarantee consistency between both objects in the same transaction. Large aggregates create contention under load, cause unnecessary locking, and make the model harder to understand. If two objects can be consistent eventually, they belong in separate aggregates.
+
+**3. Reference other aggregates by identity only.**
+One aggregate root must never hold a direct object reference to another aggregate root. It holds only the other root's ID. This keeps aggregate boundaries clean, prevents accidental cross-boundary mutations, and allows each aggregate to be loaded independently.
+
+**4. Update other aggregates using eventual consistency.**
+When a change in one aggregate must cause a change in another, publish a domain event. A separate handler (running in the same or a subsequent transaction) updates the second aggregate. This keeps each transaction scoped to a single aggregate and makes the system more resilient and scalable.
+
+**In this codebase** — `Order` is the aggregate root. `OrderItem` is an internal entity that can only be accessed and modified through `Order`. No external code holds an `OrderItem` reference directly:
+
+```csharp
+// Order.Domain/Aggregates/OrderAggregate/Order.cs
+public class Order : AggregateRoot<OrderId>
+{
+    private List<OrderItem> _orderItems;
+
+    // External code sees a read-only snapshot — it cannot add or remove items directly.
+    public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
+
+    // All mutations go through the root, which enforces invariants.
+    public void AddItem(ProductId productId, string productName, Money unitPrice, int quantity)
+    {
+        CheckRule(new OrderMustBeInDraftStatusRule(Status));        // aggregate-level invariant
+        CheckRule(new OrderCannotExceedMaxItemsRule(_orderItems.Count));
+        // ...
+        _orderItems.Add(OrderItem.Create(productId, productName, unitPrice, quantity));
+    }
+}
+```
+
+`Payment` is a separate aggregate root in a different bounded context. `Order` references it only by `OrderId` — never by object reference — maintaining the rule that aggregate roots reference other roots by identity only.
+
+---
 
 ### Domain Events
-Facts about what happened in the domain.
+
+> *"Model information about activity in the domain as a series of discrete events. Represent each event as a domain object. ... A domain event is a full-fledged part of the domain model, a representation of something that happened in the domain."*
+> — Evans, Domain-Driven Design (2003 edition addendum); also Vernon, IDDD, Ch. 8
+
+A Domain Event is a record of something significant that happened in the domain — stated in the past tense because it represents a fact that has already occurred and cannot be undone. Domain events are first-class domain objects: named in the ubiquitous language, carrying exactly the data relevant to what happened, and raised by the aggregate that owns the state change.
+
+Domain events serve two purposes:
+1. **Within a bounded context** — trigger side effects in other parts of the same context (domain event handlers)
+2. **Across bounded contexts** — translated into integration events that are published to other services, decoupling contexts from direct dependencies
+
+Vernon emphasises that the aggregate itself raises the event at the point the state changes, not the application service. This keeps the causal relationship inside the model where it belongs.
+
+**In this codebase** — every meaningful state transition in `Order` raises a domain event. The event is named in the past tense and carries the minimum data needed by listeners:
+
 ```csharp
-public record OrderSubmittedDomainEvent : DomainEventBase
-{
-    public OrderId OrderId { get; }
-    public decimal TotalAmount { get; }
-}
+// Order.Domain/Events/OrderSubmittedDomainEvent.cs
+public record OrderSubmittedDomainEvent(
+    OrderId OrderId,
+    CustomerId CustomerId,
+    decimal TotalAmount,
+    string Currency) : IDomainEvent;
 ```
+
+The aggregate raises it at the moment of the transition, before returning control to the caller:
+
+```csharp
+// Order.cs — Submit()
+Status      = OrderStatus.Submitted;
+SubmittedAt = DateTime.UtcNow;
+Emit(new OrderSubmittedDomainEvent(Id, CustomerId, TotalAmount.Amount, Currency));
+```
+
+The application layer's unit of work dispatches collected events after the state is persisted, triggering downstream handlers — including the one that translates `OrderSubmittedDomainEvent` into an `OrderSubmittedIntegrationEvent` for the Payment service.
+
+---
 
 ### Repository Pattern
-Collection-like interface for aggregates.
+
+> *"For each type of object that needs global access, create an object that can provide the illusion of an in-memory collection of all objects of that type."*
+> — Evans, Domain-Driven Design, Ch. 6
+
+A Repository provides a collection-like interface for accessing and storing aggregates. From the model's perspective, it is simply an in-memory collection — you add aggregates to it, retrieve them by identity or by specification, and the repository handles all persistence concerns behind the scenes. The domain model never sees a database.
+
+Evans is explicit that repositories exist for **aggregate roots only** — never for internal entities or value objects. There is one repository per aggregate type, and it returns fully reconstituted aggregates (not anemic data transfer objects). The repository interface belongs to the **domain layer**; the implementation belongs to infrastructure.
+
+Vernon adds: the repository also demarcates the transaction boundary. Saving through a repository saves the entire aggregate in one unit of work.
+
+**In this codebase** — `IOrderRepository` is defined in the domain layer as a domain concept. The infrastructure implementation (`OrderRepository`) is hidden behind it. The domain never references MongoDB:
+
 ```csharp
+// Order.Domain/Repositories/IOrderRepository.cs  (domain layer)
 public interface IOrderRepository : IRepository<Order, OrderId>
 {
-    Task<IReadOnlyList<Order>> GetByCustomerIdAsync(CustomerId customerId);
+    Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellationToken = default);
+    Task<Order> AddAsync(Order aggregate, CancellationToken cancellationToken = default);
+    void Update(Order aggregate);
+    Task<IReadOnlyList<Order>> GetByCustomerIdAsync(CustomerId customerId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Order>> FindAsync(Specification<Order> specification, CancellationToken cancellationToken = default);
 }
 ```
+
+The infrastructure implementation maps between the domain aggregate and the MongoDB document — the aggregate never carries persistence attributes:
+
+```csharp
+// Order.Infrastructure/Repositories/OrderRepository.cs  (infrastructure layer)
+public async Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellationToken = default)
+{
+    var doc = await context.Orders
+        .Find(o => o.Id == id.Value)
+        .FirstOrDefaultAsync(cancellationToken);
+
+    return doc is null ? null : OrderMapper.ToDomain(doc);  // reconstituted aggregate
+}
+```
+
+---
 
 ### Domain Services
-1. Contains domain logic that doesn't naturally fit in an Entity or Value Object
-2. Operates on multiple aggregates or external data
-3. Stateless
-4. Named using Ubiquitous Language
+
+> *"When a significant process or transformation in the domain is not a natural responsibility of an entity or value object, add an operation to the model as a standalone interface declared as a service."*
+> — Evans, Domain-Driven Design, Ch. 5
+
+A Domain Service encapsulates domain logic that does not naturally belong to any single entity or value object — usually because the operation involves multiple aggregates or requires coordination that neither aggregate should own. Domain services are **stateless**: they hold no data of their own, only algorithms.
+
+Evans gives three tests for a domain service (Ch. 5):
+1. The operation relates to a domain concept that is not a natural part of an entity or value object
+2. The interface is defined in terms of other domain model elements
+3. The operation is stateless
+
+The service is named using the ubiquitous language, and its interface belongs in the domain layer. If a method in an entity would need to reference another aggregate root, that is a strong signal the logic belongs in a domain service instead.
+
+**In this codebase** — `OrderConsolidationService` merges two draft orders. Neither `Order` can own this logic because neither aggregate has authority over the other. The cross-aggregate invariants (same customer, same currency, combined item count within limits) are enforced here:
 
 ```csharp
-public interface IOrderConsolidationService : IDomainService
+// Order.Domain/Services/OrderConsolidationService.cs
+public class OrderConsolidationService : IOrderConsolidationService
 {
-    /// <summary>
-    /// Moves all items from <paramref name="sourceOrder"/> into <paramref name="targetOrder"/>,
-    /// then cancels the source order.
-    ///
-    /// Preconditions enforced here (not in either aggregate, because neither owns the other):
-    ///  - Both orders must belong to the same customer
-    ///  - Both orders must be in Draft status
-    ///  - Both orders must use the same currency
-    ///  - The combined item count must not exceed the domain maximum
-    /// </summary>
-    void Consolidate(Aggregates.OrderAggregate.Order sourceOrder, Aggregates.OrderAggregate.Order targetOrder);
+    public void Consolidate(Order sourceOrder, Order targetOrder)
+    {
+        // Cross-aggregate invariants — neither aggregate owns the other,
+        // so this is where they must live.
+        EnforceInvariants(sourceOrder, targetOrder);
+
+        foreach (var item in sourceOrder.OrderItems)
+        {
+            targetOrder.AddItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity);
+        }
+
+        sourceOrder.Cancel("Consolidated into order " + targetOrder.Id);
+    }
+
+    private static void EnforceInvariants(Order source, Order target)
+    {
+        if (source.CustomerId != target.CustomerId)
+            throw new DomainException("Orders must belong to the same customer.");
+        if (source.Currency != target.Currency)
+            throw new DomainException("Orders must use the same currency.");
+        // ...
+    }
 }
 ```
+
+---
 
 ### Specification Pattern
-Encapsulated business rules for **querying and filtering**.
-```csharp
-public class OrderReadyForProcessingSpecification : Specification<Order>
-{
-    public override Expression<Func<Order, bool>> ToExpression()
-        => order => order.Status == OrderStatus.Paid;
-}
 
-// Usage: Filtering/Querying
-var overdueOrders = await repository.FindAsync(new OverdueOrderSpecification(24));
+> *"Create explicit predicate-like value objects for specialized purposes. A specification is a predicate that determines if an object does or does not satisfy some criteria."*
+> — Evans, Domain-Driven Design, Ch. 9
+
+A Specification is a predicate encapsulated as a domain object. It answers a yes/no question about a domain object in terms of the ubiquitous language — without coupling the question to a query mechanism, a service, or an if-statement scattered through application code. Evans identifies three uses (Ch. 9): **validation** (does this object satisfy the rule?), **selection** (fetch all objects that satisfy the rule), and **construction** (build an object that satisfies the rule).
+
+Specifications are composable: `And`, `Or`, and `Not` let complex rules be assembled from simple named building blocks. This composability is what separates them from ad-hoc lambda expressions — the composite retains a name and a domain meaning.
+
+**In this codebase** — specifications express named domain queries. The base class provides `&&`, `||`, and `!` operators so that composition reads like domain language:
+
+```csharp
+// Order.Domain/Specifications/OverdueOrderSpecification.cs
+public class OverdueOrderSpecification : Specification<Order>
+{
+    private readonly int _hoursThreshold;
+
+    public OverdueOrderSpecification(int hoursThreshold = 24)
+        => _hoursThreshold = hoursThreshold;
+
+    public override Expression<Func<Order, bool>> ToExpression()
+        => order => order.Status == OrderStatus.Submitted
+                 && order.SubmittedAt.HasValue
+                 && order.SubmittedAt.Value < DateTime.UtcNow.AddHours(-_hoursThreshold);
+}
+```
+
+Specifications are passed directly to the repository and can be composed:
+
+```csharp
+// Querying
+var overdueOrders     = await repository.FindAsync(new OverdueOrderSpecification(24));
 var cancellableOrders = await repository.FindAsync(new CancellableOrderSpecification());
 
-// Composable with And, Or, Not
+// Composing — builds a new specification using domain language
 var spec = new MinimumOrderValueSpecification(100) & new CancellableOrderSpecification();
+var orders = await repository.FindAsync(spec);
 ```
 
+---
+
 ### Factory Pattern
-Encapsulated object creation.
+
+> *"When creation of an entire, internally consistent aggregate, or a large value object, becomes complicated or reveals too much of the internal structure, factories provide encapsulation."*
+> — Evans, Domain-Driven Design, Ch. 6
+
+A Factory encapsulates the creation of complex domain objects. The goal is to enforce invariants at the moment of creation so that no invalid object can ever be constructed. The factory takes the responsibility of assembling the object from its parts and emitting the initial domain event — details the caller should not need to know.
+
+Evans identifies two forms (Ch. 6):
+- **Factory Method** on the aggregate root itself — used when construction is complex but naturally belongs to the type
+- **Standalone Factory** — used when construction is complex and spans multiple types, or when the logic would bloat the class
+
+The key rule: a factory must either produce a fully valid object or throw an exception — it must never return a partially initialised one.
+
+**In this codebase** — `Order.Create` is a factory method on the aggregate root. It enforces the creation invariants (customerId and shippingAddress are mandatory) and emits the `OrderCreatedDomainEvent` before returning. The private constructor prevents any other construction path:
+
 ```csharp
-public static Order Create(CustomerId customerId, Address address)
+// Order.Domain/Aggregates/OrderAggregate/Order.cs
+public static Order Create(CustomerId customerId, Address shippingAddress, string currency = "USD")
 {
-    var order = new Order { ... };
-    order.RaiseDomainEvent(new OrderCreatedDomainEvent(...));
+    var order = new Order
+    {
+        Id              = OrderId.New(),
+        CustomerId      = customerId  ?? throw new ArgumentNullException(nameof(customerId)),
+        ShippingAddress = shippingAddress ?? throw new ArgumentNullException(nameof(shippingAddress)),
+        Status          = OrderStatus.Draft,
+        Currency        = currency,
+        CreatedAt       = DateTime.UtcNow
+    };
+
+    order.Emit(new OrderCreatedDomainEvent(order.Id, order.CustomerId));
     return order;
+}
+
+private Order() { }  // forces all creation through the factory method
+```
+
+`OrderFactory` is a standalone factory that handles the more complex creation from a `CreateOrderData` command, including resolving product details and constructing the initial items:
+
+```csharp
+// Order.Domain/Factories/OrderFactory.cs
+public class OrderFactory : IFactory<Order, CreateOrderData>
+{
+    public Order Create(CreateOrderData data)
+    {
+        var order = Order.Create(data.CustomerId, data.ShippingAddress, data.Currency);
+        foreach (var item in data.Items)
+        {
+            order.AddItem(item.ProductId, item.ProductName, item.UnitPrice, item.Quantity);
+        }
+        return order;
+    }
 }
 ```
 
+---
+
 ### Enumeration Pattern
-Type-safe, behavior-rich enumerations.
+
+Evans describes **type-safe status values** as a key tool for eliminating primitive obsession in the domain model. Using raw integers or magic strings for status forces domain logic to be expressed as comparisons against literals scattered throughout the codebase — the meaning lives in the developer's head, not in the model. By replacing them with named types that carry their own behaviour, the status itself becomes a domain concept.
+
+Vernon reinforces this in *IDDD* (Ch. 5) — a value object that represents a finite set of named states is preferable to an enum when the states need to carry behaviour (validity transitions, display names, business predicates). The Enumeration pattern achieves this by combining identity (an integer id for persistence) with a name (for display and serialisation) and domain-specific methods.
+
+**In this codebase** — `OrderStatus` extends `Enumeration` and carries the transition predicates directly on the type. The question *"can this order be submitted?"* is answered by the status object itself, not by an if-chain in the application layer:
+
 ```csharp
-public class OrderStatus : Enumeration
+// Order.Domain/Aggregates/OrderAggregate/OrderStatus.cs
+public class OrderStatus(int id, string name) : Enumeration(id, name)
 {
-    public static OrderStatus Draft = new(1, nameof(Draft));
-    public static OrderStatus Submitted = new(2, nameof(Submitted));
-    
-    public bool CanBeCancelled() => this == Draft || this == Submitted;
+    public static readonly OrderStatus Draft        = new(1, nameof(Draft));
+    public static readonly OrderStatus Submitted    = new(2, nameof(Submitted));
+    public static readonly OrderStatus Paid         = new(3, nameof(Paid));
+    public static readonly OrderStatus Cancelled    = new(7, nameof(Cancelled));
+
+    public bool CanBeSubmitted()  => Equals(this, Draft);
+    public bool CanBePaid()       => Equals(this, Submitted);
+    public bool CanBeCancelled()  => this == Draft || this == Submitted || this == PaymentFailed;
+}
+```
+
+The `Order` aggregate delegates all transition-legality checks to the status object, keeping the aggregate's methods focused on *what* changes, not on *whether* the change is legal:
+
+```csharp
+// Order.cs — Cancel()
+public void Cancel(string reason)
+{
+    CheckRule(new OrderCannotBeCancelledAfterShippingRule(Status));
+    // Status.CanBeCancelled() is the domain predicate — no magic strings or integers
+    Status = OrderStatus.Cancelled;
+    Emit(new OrderCancelledDomainEvent(Id, reason));
 }
 ```
 

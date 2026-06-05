@@ -43,10 +43,7 @@ public class Order : AggregateRoot<OrderId>
     public DateTime? SubmittedAt { get; private set; }
     public DateTime? PaidAt { get; private set; }
     public string? Notes { get; private set; }
-
-    /// <summary>
-    /// Read-only access to order items - external code cannot modify the collection directly.
-    /// </summary>
+    
     public IReadOnlyCollection<OrderItem> OrderItems => _orderItems.AsReadOnly();
 
     public Money TotalAmount => CalculateTotalAmount();
@@ -65,12 +62,7 @@ public class Order : AggregateRoot<OrderId>
 
     /// Returns true when the order can legally be cancelled at this point in its lifecycle.
     public bool IsEligibleForCancellation() => Status.CanBeCancelled();
-
-    private Order() 
-    { 
-        _orderItems = [];
-    }
-
+    
     #region Factory Methods
 
     /// Rehydrates an Order from a persistence document. No domain events are emitted.
@@ -88,7 +80,7 @@ public class Order : AggregateRoot<OrderId>
         int version,
         IEnumerable<OrderItem> orderItems)
     {
-        var order = new Order
+        return new Order
         {
             Id              = id,
             CustomerId      = customerId,
@@ -103,7 +95,6 @@ public class Order : AggregateRoot<OrderId>
             Version         = version,
             _orderItems = [.. orderItems]
         };
-        return order;
     }
 
     /// <summary>
@@ -132,7 +123,6 @@ public class Order : AggregateRoot<OrderId>
     
     public void AddItem(ProductId productId, string productName, Money unitPrice, int quantity)
     {
-        // Enforce business rules using IBusinessRule pattern
         CheckRule(new OrderMustBeInDraftStatusRule(Status));
         CheckRule(new ItemQuantityMustBePositiveRule(quantity));
 
@@ -143,7 +133,6 @@ public class Order : AggregateRoot<OrderId>
         }
         else
         {
-            // Validate max items count before adding new item using IBusinessRule
             CheckRule(new OrderCannotExceedMaxItemsRule(_orderItems.Count));
 
             var newItem = OrderItem.Create(productId, productName, unitPrice, quantity);
@@ -157,7 +146,6 @@ public class Order : AggregateRoot<OrderId>
 
     public void RemoveItem(OrderItemId itemId)
     {
-        // Use IBusinessRule for clear validation message
         CheckRule(new OrderMustBeInDraftStatusRule(Status));
 
         var item = _orderItems.FirstOrDefault(x => x.Id == itemId);
@@ -200,7 +188,6 @@ public class Order : AggregateRoot<OrderId>
 
     public void UpdateShippingAddress(Address newAddress)
     {
-        // Use IBusinessRule for clear validation message
         CheckRule(new OrderMustBeInDraftStatusRule(Status));
 
         ShippingAddress = newAddress ?? throw new ArgumentNullException(nameof(newAddress));
