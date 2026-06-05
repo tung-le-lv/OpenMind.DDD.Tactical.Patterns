@@ -42,7 +42,6 @@ public class Money : ValueObject
     public static Money FromDecimal(decimal amount, string currency = "USD") => new(amount, currency);
 
     // ── Intention-Revealing query predicates ────────────────────────────────
-
     /// Returns true when the amount carries no monetary value.
     public bool IsZero => Amount == 0;
 
@@ -97,7 +96,6 @@ public class Money : ValueObject
     public override string ToString() => $"{Amount:N2} {Currency}";
 
     // ── Standalone: private helper keeps the currency guard inside Money itself ─
-
     private void EnsureSameCurrency(Money other)
     {
         if (Currency != other.Currency)
