@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using BuildingBlocks.Domain.Specifications;
-using Payment.Domain.Aggregates.PaymentAggregate;
 
 namespace Payment.Domain.Specifications;
 
