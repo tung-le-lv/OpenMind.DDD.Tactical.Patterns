@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Payment.Infrastructure</RootNamespace>
+    <RootNamespace>Order.Infrastructure</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,8 +13,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Payment.Domain\Payment.Domain.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
+    <ProjectReference Include="..\Order.Domain\Order.Domain.csproj" />
+    <ProjectReference Include="..\Order.Application\Order.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
   </ItemGroup>
 
 </Project>

@@ -12,11 +12,14 @@
   <Folder Name="/src/BoundedContexts/" />
   <Folder Name="/src/BoundedContexts/OpenMind.Order/" />
   <Folder Name="/src/BoundedContexts/OpenMind.Order/Order.Management/">
-    <Project Path="src/BoundedContexts/Order/Order.Domain/Order.Domain.csproj" />
-    <Project Path="src/BoundedContexts/Order/Order.Application/Order.Application.csproj" />
-    <Project Path="src/BoundedContexts/Order/Order.Infrastructure/Order.Infrastructure.csproj" />
-    <Project Path="src/BoundedContexts/Order/Order.API/Order.API.csproj" />
-    <Project Path="src/BoundedContexts/Order/Order.IntegrationEvents/Order.IntegrationEvents.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Management/Order.Domain/Order.Domain.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Management/Order.Application/Order.Application.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Management/Order.Infrastructure/Order.Infrastructure.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Management/Order.API/Order.API.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Management/Order.IntegrationEvents/Order.IntegrationEvents.csproj" />
+  </Folder>
+  <Folder Name="/src/BoundedContexts/OpenMind.Order/Order.Search/">
+    <Project Path="src/BoundedContexts/Order/Order.Search/Order.Search.csproj" />
   </Folder>
   <Folder Name="/src/BoundedContexts/OpenMind.Payment/" />
   <Folder Name="/src/BoundedContexts/OpenMind.Payment/Payment.Management/">

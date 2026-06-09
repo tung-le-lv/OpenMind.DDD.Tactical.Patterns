@@ -15,8 +15,8 @@
   <ItemGroup>
     <ProjectReference Include="..\Order.Domain\Order.Domain.csproj" />
     <ProjectReference Include="..\Order.IntegrationEvents\Order.IntegrationEvents.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
-    <ProjectReference Include="..\..\Payment\Payment.IntegrationEvents\Payment.IntegrationEvents.csproj" />
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
+    <ProjectReference Include="..\..\..\Payment\Payment.IntegrationEvents\Payment.IntegrationEvents.csproj" />
   </ItemGroup>
 
 </Project>
