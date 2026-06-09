@@ -18,7 +18,7 @@ namespace Order.Domain.Aggregates.OrderAggregate;
 /// 5. Rich Domain Model: Business logic lives in the domain, not in services
 
 /// Supple Design patterns applied:
-/// - Intention-Revealing Interfaces: ItemCount, IsEligibleForSubmission, IsEligibleForCancellation
+/// - Intention-Revealing Interfaces: IsEligibleForSubmission, IsEligibleForCancellation
 ///   expose domain concepts rather than raw internals
 /// - Side-Effect-Free Functions (Evans): see ApplyPromotion for the full pattern.
 ///   The command first calls ProjectTotalWithDiscount and item.CalculateDiscountAmount
@@ -49,18 +49,11 @@ public class Order : AggregateRoot<OrderId>
     public Money TotalAmount => CalculateTotalAmount();
     public string Currency { get; private set; }
 
-    // ── Intention-Revealing Interfaces (query predicates) ────────────────────
-    // These express domain concepts as named predicates rather than raw state
-    // comparisons. They read state but do not compute or return new values —
-    // they are NOT Evans' Side-Effect-Free Functions; they are CQS-style queries.
-
-    /// Returns true when the order can legally be submitted at the given minimum value.
     public bool IsEligibleForSubmission(decimal minimumOrderValue = 10.00m)
         => Status.CanBeSubmitted()
            && _orderItems.Count > 0
            && TotalAmount.IsGreaterThanOrEqualTo(Money.FromDecimal(minimumOrderValue, Currency));
 
-    /// Returns true when the order can legally be cancelled at this point in its lifecycle.
     public bool IsEligibleForCancellation() => Status.CanBeCancelled();
     
     #region Factory Methods
@@ -203,11 +196,9 @@ public class Order : AggregateRoot<OrderId>
         Notes = notes;
         SetModified();
     }
-
-    /// Applies a percentage promotion discount to all items in the order.
-    ///
+    
     /// Side-Effect-Free Functions pattern (Evans) in action:
-    ///   Phase 1 — pure computation, nothing mutated yet:
+    ///   Phase 1 — pure computation, nothing mutated yet. The computation is encapsulated in value object and can be tested independently:
     ///     - ProjectTotalWithDiscount computes the projected order total after discount
     ///     - item.CalculateDiscountAmount computes the absolute discount per item
     ///   Phase 2 — validation against the computed results (still no mutation):
