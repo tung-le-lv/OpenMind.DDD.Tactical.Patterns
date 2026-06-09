@@ -4,17 +4,19 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Payment.Infrastructure</RootNamespace>
+    <RootNamespace>Payment.Application</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Driver" Version="3.1.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Payment.Domain\Payment.Domain.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
+    <ProjectReference Include="..\..\Payment.Contracts\Payment.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
+    <ProjectReference Include="..\..\..\Order\Order.Contracts\Order.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

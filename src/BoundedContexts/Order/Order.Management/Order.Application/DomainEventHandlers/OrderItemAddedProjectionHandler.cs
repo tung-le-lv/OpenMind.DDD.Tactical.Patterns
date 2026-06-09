@@ -1,7 +1,7 @@
 using BuildingBlocks.Integration;
 using MediatR;
 using Order.Domain.Events;
-using Order.IntegrationEvents;
+using Order.Contracts.IntegrationEvents;
 
 namespace Order.Application.DomainEventHandlers;
 

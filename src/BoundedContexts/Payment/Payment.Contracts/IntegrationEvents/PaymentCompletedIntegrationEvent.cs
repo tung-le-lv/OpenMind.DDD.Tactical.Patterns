@@ -1,6 +1,6 @@
-﻿using BuildingBlocks.Integration;
+using BuildingBlocks.Integration;
 
-namespace Payment.IntegrationEvents;
+namespace Payment.Contracts.IntegrationEvents;
 
 public record PaymentCompletedIntegrationEvent(Guid PaymentId, Guid OrderId, decimal Amount, DateTime PaidAt)
     : IntegrationEvent;

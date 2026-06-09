@@ -3,12 +3,14 @@ using MongoDB.Driver;
 using Order.Application.AntiCorruption;
 using Order.Application.Commands;
 using Order.Application.IntegrationEventHandlers;
+using Order.Application.Services;
+using Order.Contracts;
 using Order.Domain.Repositories;
 using Order.Domain.Services;
 using Order.Infrastructure.Messaging;
 using Order.Infrastructure.Persistence;
 using Order.Infrastructure.Repositories;
-using Payment.IntegrationEvents;
+using Payment.Contracts.IntegrationEvents;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,10 @@ builder.Services.AddMediatR(cfg =>
 
 // Repository
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+
+// Customer-Supplier: Order exposes IOrderDataProvider so its own services
+// (and in-process consumers like tests) can resolve it without re-wiring.
+builder.Services.AddScoped<IOrderDataProvider, OrderDataProvider>();
 
 // Domain Services
 builder.Services.AddScoped<IOrderConsolidationService, OrderConsolidationService>();

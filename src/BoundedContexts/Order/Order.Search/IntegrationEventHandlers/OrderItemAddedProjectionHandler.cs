@@ -1,6 +1,6 @@
 using BuildingBlocks.Integration;
 using MongoDB.Driver;
-using Order.IntegrationEvents;
+using Order.Contracts.IntegrationEvents;
 using Order.Search.Infrastructure.Persistence;
 using Order.Search.ReadModels;
 

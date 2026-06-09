@@ -1,7 +1,7 @@
 using BuildingBlocks.Integration;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using Order.IntegrationEvents;
+using Order.Contracts.IntegrationEvents;
 using Payment.Application.Commands;
 using Payment.Application.DTOs;
 

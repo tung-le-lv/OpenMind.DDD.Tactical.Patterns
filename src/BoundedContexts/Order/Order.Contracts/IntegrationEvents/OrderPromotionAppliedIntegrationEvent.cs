@@ -1,6 +1,6 @@
 using BuildingBlocks.Integration;
 
-namespace Order.IntegrationEvents;
+namespace Order.Contracts.IntegrationEvents;
 
 public record OrderItemDiscountSnapshot(Guid ItemId, decimal DiscountAmount);
 

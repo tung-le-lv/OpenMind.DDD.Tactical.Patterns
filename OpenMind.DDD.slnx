@@ -16,17 +16,21 @@
     <Project Path="src/BoundedContexts/Order/Order.Management/Order.Application/Order.Application.csproj" />
     <Project Path="src/BoundedContexts/Order/Order.Management/Order.Infrastructure/Order.Infrastructure.csproj" />
     <Project Path="src/BoundedContexts/Order/Order.Management/Order.API/Order.API.csproj" />
-    <Project Path="src/BoundedContexts/Order/Order.Management/Order.IntegrationEvents/Order.IntegrationEvents.csproj" />
+  </Folder>
+  <Folder Name="/src/BoundedContexts/OpenMind.Order/Order.Contracts/">
+    <Project Path="src/BoundedContexts/Order/Order.Contracts/Order.Contracts.csproj" />
   </Folder>
   <Folder Name="/src/BoundedContexts/OpenMind.Order/Order.Search/">
     <Project Path="src/BoundedContexts/Order/Order.Search/Order.Search.csproj" />
   </Folder>
   <Folder Name="/src/BoundedContexts/OpenMind.Payment/" />
   <Folder Name="/src/BoundedContexts/OpenMind.Payment/Payment.Management/">
-    <Project Path="src/BoundedContexts/Payment/Payment.Domain/Payment.Domain.csproj" />
-    <Project Path="src/BoundedContexts/Payment/Payment.Application/Payment.Application.csproj" />
-    <Project Path="src/BoundedContexts/Payment/Payment.Infrastructure/Payment.Infrastructure.csproj" />
-    <Project Path="src/BoundedContexts/Payment/Payment.API/Payment.API.csproj" />
-    <Project Path="src/BoundedContexts/Payment/Payment.IntegrationEvents/Payment.IntegrationEvents.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.Management/Payment.Domain/Payment.Domain.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.Management/Payment.Application/Payment.Application.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.Management/Payment.Infrastructure/Payment.Infrastructure.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.Management/Payment.API/Payment.API.csproj" />
+  </Folder>
+  <Folder Name="/src/BoundedContexts/OpenMind.Payment/Payment.Contracts/">
+    <Project Path="src/BoundedContexts/Payment/Payment.Contracts/Payment.Contracts.csproj" />
   </Folder>
 </Solution>

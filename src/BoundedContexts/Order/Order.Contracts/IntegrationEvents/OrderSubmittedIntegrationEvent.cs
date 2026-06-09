@@ -1,6 +1,6 @@
-﻿using BuildingBlocks.Integration;
+using BuildingBlocks.Integration;
 
-namespace Order.IntegrationEvents;
+namespace Order.Contracts.IntegrationEvents;
 
 /// <summary>
 /// Integration Event published when an order is submitted.

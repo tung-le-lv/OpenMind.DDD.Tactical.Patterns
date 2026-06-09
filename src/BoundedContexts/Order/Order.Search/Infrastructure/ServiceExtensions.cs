@@ -1,6 +1,6 @@
 using BuildingBlocks.Integration;
 using Microsoft.Extensions.DependencyInjection;
-using Order.IntegrationEvents;
+using Order.Contracts.IntegrationEvents;
 using Order.Search.Infrastructure.Messaging;
 using Order.Search.Infrastructure.Persistence;
 using Order.Search.IntegrationEventHandlers;

@@ -2,7 +2,7 @@ using BuildingBlocks.Integration;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using Order.Application.Commands;
-using Payment.IntegrationEvents;
+using Payment.Contracts.IntegrationEvents;
 
 namespace Order.Application.IntegrationEventHandlers;
 

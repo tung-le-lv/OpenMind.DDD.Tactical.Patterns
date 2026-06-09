@@ -1,6 +1,12 @@
 using BuildingBlocks.Integration;
 using MongoDB.Driver;
-using Order.IntegrationEvents;
+using Order.Application.Services;
+using Order.Contracts;
+using Order.Contracts.IntegrationEvents;
+using Order.Domain.Repositories;
+using Order.Infrastructure.Repositories;
+using OrderMongoConfig = Order.Infrastructure.Persistence.MongoDbConfiguration;
+using OrderMongoDbContext = Order.Infrastructure.Persistence.OrderMongoDbContext;
 using Payment.Application.Handlers;
 using Payment.Application.IntegrationEventHandlers;
 using Payment.Domain.Repositories;
@@ -14,7 +20,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 
 // Configure MongoDB serialization for DDD entities
-MongoDbConfiguration.Configure();
+MongoDbConfiguration.Configure();    // Payment conventions
+OrderMongoConfig.Configure();        // Order conventions
 
 // MongoDB configuration
 var mongoSettings = builder.Configuration.GetSection("MongoDB").Get<MongoDbSettings>() ?? new MongoDbSettings();
@@ -30,6 +37,13 @@ builder.Services.AddMediatR(cfg =>
 
 // Repository
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+
+// Customer-Supplier: register Order's data provider so Payment can query order data.
+// Payment.Application depends only on IOrderDataProvider (the contract).
+// The concrete OrderDataProvider and its OrderRepository are wired here at the composition root.
+builder.Services.AddScoped<OrderMongoDbContext>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderDataProvider, OrderDataProvider>();
 
 // Domain Services
 builder.Services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
