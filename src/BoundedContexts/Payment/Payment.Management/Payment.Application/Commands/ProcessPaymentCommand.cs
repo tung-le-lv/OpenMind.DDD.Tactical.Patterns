@@ -34,16 +34,6 @@ public class ProcessPaymentCommandHandler(
         var customerInfo = await customerInfoProvider.GetCustomerInfoAsync(payment.CustomerId.Value, cancellationToken)
             ?? throw new InvalidOperationException($"Customer {payment.CustomerId.Value} not found");
 
-        if (string.IsNullOrWhiteSpace(customerInfo.Email))
-        {
-            throw new InvalidOperationException($"Customer {payment.CustomerId.Value} has no email address");
-        }
-
-        if (string.IsNullOrWhiteSpace(customerInfo.BillingAddress.Street))
-        {
-            throw new InvalidOperationException($"Customer {payment.CustomerId.Value} has no billing address");
-        }
-
         // Domain validation
         var validation = processingService.ValidatePayment(payment);
         if (!validation.IsValid)

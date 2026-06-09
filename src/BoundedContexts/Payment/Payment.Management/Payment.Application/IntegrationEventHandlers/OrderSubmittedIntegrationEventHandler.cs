@@ -22,8 +22,6 @@ public class OrderSubmittedIntegrationEventHandler(IMediator mediator) : IIntegr
             "CreditCard",
             new CardDetailsDto("4242", "Visa", 12, DateTime.UtcNow.Year + 2, "Demo Customer"));
 
-        var paymentId = await mediator.Send(command, cancellationToken);
-
-        await mediator.Send(new ProcessPaymentCommand(paymentId), cancellationToken);
+        await mediator.Send(command, cancellationToken);
     }
 }
