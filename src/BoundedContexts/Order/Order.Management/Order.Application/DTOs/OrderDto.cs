@@ -11,4 +11,30 @@ public record OrderDto(
     string? Notes,
     DateTime CreatedAt,
     DateTime? SubmittedAt,
-    DateTime? PaidAt);
+    DateTime? PaidAt)
+{
+    public static OrderDto From(Domain.Aggregates.OrderAggregate.Order order) => new(
+        order.Id.Value,
+        order.CustomerId.Value,
+        order.Status.Name,
+        order.TotalAmount.Amount,
+        order.Currency,
+        new AddressDto(
+            order.ShippingAddress.Street,
+            order.ShippingAddress.City,
+            order.ShippingAddress.State,
+            order.ShippingAddress.Country,
+            order.ShippingAddress.ZipCode),
+        order.OrderItems.Select(item => new OrderItemDto(
+            item.Id.Value,
+            item.ProductId.Value,
+            item.ProductName,
+            item.UnitPrice.Amount,
+            item.Quantity,
+            item.Discount.Amount,
+            item.Total.Amount)).ToList(),
+        order.Notes,
+        order.CreatedAt,
+        order.SubmittedAt,
+        order.PaidAt);
+}
