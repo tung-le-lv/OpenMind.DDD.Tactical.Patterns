@@ -8,7 +8,7 @@ namespace Payment.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PaymentsController(IMediator mediator, ILogger<PaymentsController> logger) : ControllerBase
+public class PaymentsController(IMediator mediator) : ControllerBase
 {
     [HttpGet("{paymentId:guid}")]
     [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
@@ -67,7 +67,6 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
                 new CreatePaymentCommand(request.OrderId, request.CustomerId, request.Amount, request.Currency, request.Method, request.CardDetails),
                 cancellationToken);
 
-            logger.LogInformation("Payment {PaymentId} created", paymentId);
             return CreatedAtAction(nameof(GetById), new { paymentId }, paymentId);
         }
         catch (ArgumentException ex)
@@ -91,7 +90,6 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
                 return NotFound();
             }
 
-            logger.LogInformation("Payment {PaymentId} processing started", paymentId);
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -118,7 +116,6 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
                 return NotFound();
             }
 
-            logger.LogInformation("Payment {PaymentId} completed", paymentId);
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -144,7 +141,6 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
                 return NotFound();
             }
 
-            logger.LogWarning("Payment {PaymentId} failed. Reason: {Reason}", paymentId, request.Reason);
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -171,7 +167,6 @@ public class PaymentsController(IMediator mediator, ILogger<PaymentsController> 
                 return NotFound();
             }
 
-            logger.LogInformation("Payment {PaymentId} refunded. Reason: {Reason}", paymentId, request.Reason);
             return Ok();
         }
         catch (InvalidOperationException ex)

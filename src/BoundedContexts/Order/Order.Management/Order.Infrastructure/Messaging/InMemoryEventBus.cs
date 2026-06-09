@@ -1,12 +1,9 @@
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using BuildingBlocks.Integration;
 
 namespace Order.Infrastructure.Messaging;
 
-public class InMemoryEventBus(
-    ILogger<InMemoryEventBus> logger,
-    IServiceProvider serviceProvider) : IEventBus
+public class InMemoryEventBus(IServiceProvider serviceProvider) : IEventBus
 {
     private readonly ConcurrentDictionary<string, List<Type>> _handlers = new();
 
@@ -14,11 +11,6 @@ public class InMemoryEventBus(
         where TEvent : IntegrationEvent
     {
         var eventType = @event.GetType().Name;
-
-        logger.LogInformation(
-            "Publishing integration event {EventType} with Id {EventId}",
-            eventType,
-            @event.Id);
 
         if (_handlers.TryGetValue(eventType, out var handlerTypes))
         {
@@ -29,7 +21,7 @@ public class InMemoryEventBus(
                 {
                     var concreteType = typeof(IIntegrationEventHandler<>).MakeGenericType(@event.GetType());
                     var method = concreteType.GetMethod("HandleAsync");
-                    
+
                     if (method != null)
                     {
                         await (Task)method.Invoke(handler, new object[] { @event, cancellationToken })!;
@@ -52,16 +44,8 @@ public class InMemoryEventBus(
             (_, existing) =>
             {
                 if (!existing.Contains(handlerType))
-                {
                     existing.Add(handlerType);
-                }
-
                 return existing;
             });
-
-        logger.LogInformation(
-            "Subscribed {HandlerType} to {EventType}",
-            handlerType.Name,
-            eventType);
     }
 }

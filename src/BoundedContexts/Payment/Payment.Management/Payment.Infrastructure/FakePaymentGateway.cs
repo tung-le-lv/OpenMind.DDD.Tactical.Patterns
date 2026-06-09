@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Payment.Application.Services;
 
 namespace Payment.Infrastructure;
@@ -12,23 +11,10 @@ namespace Payment.Infrastructure;
 ///   amount > 10 000    → declined by risk engine
 ///   everything else    → approved, returns a generated transaction ID
 /// </summary>
-public class FakePaymentGateway(ILogger<FakePaymentGateway> logger) : IPaymentGateway
+public class FakePaymentGateway : IPaymentGateway
 {
     public Task<GatewayChargeResult> ChargeAsync(GatewayChargeRequest request, CancellationToken cancellationToken = default)
-    {
-        logger.LogInformation(
-            "FakePaymentGateway: charging {Amount} {Currency} for {Email}",
-            request.Amount, request.Currency, request.CustomerEmail);
-
-        var result = Evaluate(request);
-
-        if (result.Succeeded)
-            logger.LogInformation("FakePaymentGateway: approved — TXN {TransactionId}", result.TransactionId);
-        else
-            logger.LogWarning("FakePaymentGateway: declined — {Reason}", result.ErrorMessage);
-
-        return Task.FromResult(result);
-    }
+        => Task.FromResult(Evaluate(request));
 
     private static GatewayChargeResult Evaluate(GatewayChargeRequest request)
     {

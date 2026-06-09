@@ -13,7 +13,7 @@ namespace Order.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController(IMediator mediator, ILogger<OrdersController> logger) : ControllerBase
+public class OrdersController(IMediator mediator) : ControllerBase
 {
     [HttpGet("{orderId:guid}")]
     [ProducesResponseType(typeof(OrderDto), StatusCodes.Status200OK)]
@@ -62,8 +62,6 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
         var orderId = await mediator.Send(
             new CreateOrderCommand(request.CustomerId, request.ShippingAddress, request.Currency, request.Notes),
             cancellationToken);
-
-        logger.LogInformation("Order {OrderId} created", orderId);
 
         return CreatedAtAction(nameof(GetById), new { orderId }, orderId);
     }
@@ -137,8 +135,6 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
                 return NotFound();
             }
 
-            logger.LogInformation("Order {OrderId} submitted", orderId);
-
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -165,8 +161,6 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
                 return NotFound();
             }
 
-            logger.LogInformation("Order {OrderId} cancelled. Reason: {Reason}", orderId, request.Reason);
-
             return Ok();
         }
         catch (InvalidOperationException ex)
@@ -192,8 +186,6 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             {
                 return NotFound();
             }
-
-            logger.LogInformation("Order {SourceOrderId} consolidated into {TargetOrderId}", sourceOrderId, targetOrderId);
 
             return Ok();
         }
@@ -228,8 +220,6 @@ public class OrdersController(IMediator mediator, ILogger<OrdersController> logg
             request.Notes);
 
         var orderId = await mediator.Send(command, cancellationToken);
-
-        logger.LogInformation("External order {ExternalOrderId} imported as {OrderId}", request.ExternalOrderId, orderId);
 
         return CreatedAtAction(nameof(GetById), new { orderId }, orderId);
     }
