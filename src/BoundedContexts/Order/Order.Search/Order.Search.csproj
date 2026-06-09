@@ -12,4 +12,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
+    <ProjectReference Include="..\Order.Management\Order.IntegrationEvents\Order.IntegrationEvents.csproj" />
+  </ItemGroup>
+
 </Project>

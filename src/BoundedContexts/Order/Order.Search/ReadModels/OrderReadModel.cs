@@ -23,8 +23,7 @@ public class OrderReadModel
     public int Version { get; set; }
     public List<OrderItemReadModel> OrderItems { get; set; } = [];
 
-    public decimal TotalAmount =>
-        OrderItems.Sum(i => i.UnitPriceAmount * i.Quantity - i.DiscountAmount);
+    public decimal TotalAmount => OrderItems.Sum(i => i.UnitPriceAmount * i.Quantity - i.DiscountAmount);
 }
 
 [BsonIgnoreExtraElements]

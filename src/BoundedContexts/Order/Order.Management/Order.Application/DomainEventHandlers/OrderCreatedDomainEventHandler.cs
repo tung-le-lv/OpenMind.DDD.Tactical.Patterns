@@ -1,18 +1,29 @@
+using BuildingBlocks.Integration;
 using MediatR;
-using Microsoft.Extensions.Logging;
 using Order.Domain.Events;
+using Order.IntegrationEvents;
 
 namespace Order.Application.DomainEventHandlers;
 
-public class OrderCreatedDomainEventHandler(ILogger<OrderCreatedDomainEventHandler> logger) : INotificationHandler<OrderCreatedDomainEvent>
+public class OrderCreatedDomainEventHandler(IEventBus eventBus) : INotificationHandler<OrderCreatedDomainEvent>
 {
-    public Task Handle(OrderCreatedDomainEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(OrderCreatedDomainEvent notification, CancellationToken cancellationToken)
     {
-        logger.LogInformation(
-            "Order {OrderId} created for customer {CustomerId}",
-            notification.OrderId.Value,
-            notification.CustomerId.Value);
+        var integrationEvent = new OrderCreatedIntegrationEvent
+        {
+            OrderId = notification.OrderId.Value,
+            CustomerId = notification.CustomerId.Value,
+            Street = notification.ShippingAddress.Street,
+            City = notification.ShippingAddress.City,
+            State = notification.ShippingAddress.State,
+            Country = notification.ShippingAddress.Country,
+            ZipCode = notification.ShippingAddress.ZipCode,
+            Status = "Draft",
+            Currency = notification.Currency,
+            CreatedAt = notification.CreatedAt,
+            Version = 0
+        };
 
-        return Task.CompletedTask;
+        await eventBus.PublishAsync(integrationEvent, cancellationToken);
     }
 }

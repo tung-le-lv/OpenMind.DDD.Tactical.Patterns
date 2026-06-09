@@ -112,7 +112,7 @@ public class Order : AggregateRoot<OrderId>
             CreatedAt = DateTime.UtcNow
         };
 
-        order.Emit(new OrderCreatedDomainEvent(order.Id, order.CustomerId));
+        order.Emit(new OrderCreatedDomainEvent(order.Id, order.CustomerId, shippingAddress, currency, order.CreatedAt));
 
         return order;
     }
@@ -130,6 +130,10 @@ public class Order : AggregateRoot<OrderId>
         if (existingItem != null)
         {
             existingItem.AddQuantity(quantity);
+            SetModified();
+            Emit(new OrderItemAddedDomainEvent(Id, existingItem.Id.Value, productId, productName,
+                existingItem.Quantity, existingItem.UnitPrice.Amount, existingItem.UnitPrice.Currency,
+                existingItem.Discount.Amount, IsNewItem: false, Version));
         }
         else
         {
@@ -137,11 +141,11 @@ public class Order : AggregateRoot<OrderId>
 
             var newItem = OrderItem.Create(productId, productName, unitPrice, quantity);
             _orderItems.Add(newItem);
+            SetModified();
+            Emit(new OrderItemAddedDomainEvent(Id, newItem.Id.Value, productId, productName,
+                quantity, unitPrice.Amount, unitPrice.Currency,
+                DiscountAmount: 0m, IsNewItem: true, Version));
         }
-
-        SetModified();
-
-        Emit(new OrderItemAddedDomainEvent(Id, productId, productName, quantity));
     }
 
     public void RemoveItem(OrderItemId itemId)
@@ -236,7 +240,10 @@ public class Order : AggregateRoot<OrderId>
         }
 
         SetModified();
-        Emit(new PromotionAppliedDomainEvent(Id, discount.Value, originalTotal.Amount, projectedTotal.Amount, Currency));
+        var itemDiscounts = _orderItems
+            .Select(i => (i.Id.Value, i.Discount.Amount))
+            .ToList<(Guid, decimal)>();
+        Emit(new PromotionAppliedDomainEvent(Id, discount.Value, originalTotal.Amount, projectedTotal.Amount, Currency, itemDiscounts, Version));
 
         Debug.Assert(
             TotalAmount.IsGreaterThanOrEqualTo(Money.Zero(Currency)),
@@ -264,7 +271,7 @@ public class Order : AggregateRoot<OrderId>
         SubmittedAt = DateTime.UtcNow;
         SetModified();
 
-        Emit(new OrderSubmittedDomainEvent(Id, CustomerId, TotalAmount.Amount, Currency));
+        Emit(new OrderSubmittedDomainEvent(Id, CustomerId, TotalAmount.Amount, Currency, SubmittedAt.Value, Version));
 
         // Assertion: postcondition — submitted orders always have a timestamp.
         Debug.Assert(SubmittedAt.HasValue, "SubmittedAt must be set after Submit.");
@@ -283,7 +290,7 @@ public class Order : AggregateRoot<OrderId>
         PaidAt = paidAt;
         SetModified();
 
-        Emit(new OrderPaidDomainEvent(Id, paidAt));
+        Emit(new OrderPaidDomainEvent(Id, paidAt, Version));
 
         // Assertion: postcondition — a paid order always records when payment occurred.
         Debug.Assert(PaidAt.HasValue, "PaidAt must be set after MarkAsPaid.");
@@ -300,7 +307,7 @@ public class Order : AggregateRoot<OrderId>
         Status = OrderStatus.PaymentFailed;
         SetModified();
 
-        Emit(new OrderPaymentFailedDomainEvent(Id, reason));
+        Emit(new OrderPaymentFailedDomainEvent(Id, reason, Version));
 
         Debug.Assert(Status == OrderStatus.PaymentFailed, "Status must be PaymentFailed after MarkPaymentFailed.");
     }
@@ -329,7 +336,7 @@ public class Order : AggregateRoot<OrderId>
         Status = OrderStatus.Shipped;
         SetModified();
 
-        Emit(new OrderShippedDomainEvent(Id));
+        Emit(new OrderShippedDomainEvent(Id, Version));
 
         Debug.Assert(Status == OrderStatus.Shipped, "Status must be Shipped after Ship.");
     }
@@ -344,7 +351,7 @@ public class Order : AggregateRoot<OrderId>
         Status = OrderStatus.Delivered;
         SetModified();
 
-        Emit(new OrderDeliveredDomainEvent(Id));
+        Emit(new OrderDeliveredDomainEvent(Id, Version));
 
         Debug.Assert(Status == OrderStatus.Delivered, "Status must be Delivered after MarkAsDelivered.");
     }
@@ -356,7 +363,7 @@ public class Order : AggregateRoot<OrderId>
         Status = OrderStatus.Cancelled;
         SetModified();
 
-        Emit(new OrderCancelledDomainEvent(Id, reason));
+        Emit(new OrderCancelledDomainEvent(Id, reason, Version));
 
         // Assertion: postcondition — once cancelled, the order cannot be modified further.
         Debug.Assert(Equals(Status, OrderStatus.Cancelled), "Status must be Cancelled after Cancel.");

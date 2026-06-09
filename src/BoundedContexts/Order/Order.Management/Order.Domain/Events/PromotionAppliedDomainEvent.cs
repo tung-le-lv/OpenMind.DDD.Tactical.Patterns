@@ -11,4 +11,6 @@ public record PromotionAppliedDomainEvent(
     decimal DiscountPercentage,
     decimal OriginalTotal,
     decimal DiscountedTotal,
-    string Currency) : DomainEventBase;
+    string Currency,
+    IReadOnlyList<(Guid ItemId, decimal DiscountAmount)> ItemDiscounts,
+    int Version) : DomainEventBase;

@@ -5,14 +5,14 @@ using Order.IntegrationEvents;
 
 namespace Order.Application.DomainEventHandlers;
 
-public class OrderCancelledDomainEventHandler(IEventBus eventBus) : INotificationHandler<OrderCancelledDomainEvent>
+public class OrderShippedProjectionHandler(IEventBus eventBus) : INotificationHandler<OrderShippedDomainEvent>
 {
-    public async Task Handle(OrderCancelledDomainEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(OrderShippedDomainEvent notification, CancellationToken cancellationToken)
     {
         await eventBus.PublishAsync(new OrderStatusChangedIntegrationEvent
         {
             OrderId = notification.OrderId.Value,
-            NewStatus = "Cancelled",
+            NewStatus = "Shipped",
             ModifiedAt = notification.OccurredOn,
             Version = notification.Version
         }, cancellationToken);

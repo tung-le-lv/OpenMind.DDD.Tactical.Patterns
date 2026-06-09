@@ -3,4 +3,9 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Domain.Events;
 
-public record OrderCreatedDomainEvent(OrderId OrderId, CustomerId CustomerId) : DomainEventBase;
+public record OrderCreatedDomainEvent(
+    OrderId OrderId,
+    CustomerId CustomerId,
+    Address ShippingAddress,
+    string Currency,
+    DateTime CreatedAt) : DomainEventBase;

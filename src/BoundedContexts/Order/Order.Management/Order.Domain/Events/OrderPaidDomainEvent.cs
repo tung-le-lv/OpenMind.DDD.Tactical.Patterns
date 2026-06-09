@@ -3,4 +3,4 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Domain.Events;
 
-public record OrderPaidDomainEvent(OrderId OrderId, DateTime PaidAt) : DomainEventBase;
+public record OrderPaidDomainEvent(OrderId OrderId, DateTime PaidAt, int Version) : DomainEventBase;

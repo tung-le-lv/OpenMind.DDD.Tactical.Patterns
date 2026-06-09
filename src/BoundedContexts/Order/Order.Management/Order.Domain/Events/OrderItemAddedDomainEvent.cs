@@ -3,4 +3,14 @@ using Order.Domain.ValueObjects;
 
 namespace Order.Domain.Events;
 
-public record OrderItemAddedDomainEvent(OrderId OrderId, ProductId ProductId, string ProductName, int Quantity) : DomainEventBase;
+public record OrderItemAddedDomainEvent(
+    OrderId OrderId,
+    Guid ItemId,
+    ProductId ProductId,
+    string ProductName,
+    int Quantity,
+    decimal UnitPriceAmount,
+    string Currency,
+    decimal DiscountAmount,
+    bool IsNewItem,
+    int Version) : DomainEventBase;
