@@ -1,0 +1,29 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/" />
+  <Folder Name="/src/DDD.BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/DDD.BuildingBlocks.Domain/DDD.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/DDD.BuildingBlocks.Integration/DDD.BuildingBlocks.Integration.csproj" />
+  </Folder>
+  <Folder Name="/src/BoundedContexts/" />
+  <Folder Name="/src/BoundedContexts/OpenMind.Order/" />
+  <Folder Name="/src/BoundedContexts/OpenMind.Order/Order.Management/">
+    <Project Path="src/BoundedContexts/Order/Order.Domain/Order.Domain.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Application/Order.Application.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.Infrastructure/Order.Infrastructure.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.API/Order.API.csproj" />
+    <Project Path="src/BoundedContexts/Order/Order.IntegrationEvents/Order.IntegrationEvents.csproj" />
+  </Folder>
+  <Folder Name="/src/BoundedContexts/OpenMind.Payment/" />
+  <Folder Name="/src/BoundedContexts/OpenMind.Payment/Payment.Management/">
+    <Project Path="src/BoundedContexts/Payment/Payment.Domain/Payment.Domain.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.Application/Payment.Application.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.Infrastructure/Payment.Infrastructure.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.API/Payment.API.csproj" />
+    <Project Path="src/BoundedContexts/Payment/Payment.IntegrationEvents/Payment.IntegrationEvents.csproj" />
+  </Folder>
+</Solution>

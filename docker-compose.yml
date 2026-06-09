@@ -23,7 +23,7 @@ services:
   order-api:
     build:
       context: .
-      dockerfile: src/Services/Order/Order.API/Dockerfile
+      dockerfile: src/BoundedContexts/Order/Order.API/Dockerfile
     container_name: ddd-order-api
     profiles: ["all"]
     ports:
@@ -41,7 +41,7 @@ services:
   payment-api:
     build:
       context: .
-      dockerfile: src/Services/Payment/Payment.API/Dockerfile
+      dockerfile: src/BoundedContexts/Payment/Payment.API/Dockerfile
     container_name: ddd-payment-api
     profiles: ["all"]
     ports:
