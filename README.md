@@ -7,7 +7,7 @@ In military terms, strategy is the big-picture planning: which battles to fight,
 
 Evans mapped this directly onto domain modeling. Strategic design covers the system-wide, coarse-grained, long-lived decisions — where to draw bounded context boundaries, how contexts and teams relate (the context map, ACL, shared kernel), and which subdomain is your core and therefore deserves your best modeling effort. Tactical design is the hands-on, in-the-trenches work of building a model once you're inside a boundary: the concrete code-level building blocks like entities, value objects, aggregates, repositories. They're the tools you reach for to actually implement the model, the same way tactics are what you use to win the battle you're currently in.
 
-## Table of Contents
+# Table of Contents
 
 - [References](#references)
 - [Tactical Design Patterns](#tactical-design-patterns)
@@ -31,25 +31,23 @@ Evans mapped this directly onto domain modeling. Strategic design covers the sys
 - [Strategic Design](#strategic-design)
   - [Ubiquitous Language](#ubiquitous-language)
   - [Bounded Contexts](#bounded-contexts)
-  - [Context Map: Order ↔ Payment](#context-map-order--payment)
-    - [Open Host Service](#open-host-service)
-    - [Published Language](#published-language)
-    - [Anti-Corruption Layer](#anti-corruption-layer)
-    - [Partnership](#partnership)
-    - [Event Flow](#event-flow)
+  - [Context Map](#context-map)
+    - [Kind of context map](#kind-of-context-map)
+    - [Context map between Order and Payment](#context-map-between-order-and-payment)
+    - [Payment and Order as Customer-Supplier](#payment-and-order-as-customer-supplier)
 
-## References
+# References
 
 - Evans, Eric. "Domain-Driven Design: Tackling Complexity in the Heart of Software"
 - Vernon, Vaughn. "Domain-Driven Design Distilled" & "Implementing Domain-Driven Design"
 
-## Tactical Design Patterns
+# Tactical Design Patterns
 
-### The Building Blocks
+## The Building Blocks
 
 ![Building Blocks](docs/building-blocks.png)
 
-#### Entities
+### Entities
 
 > *"Some objects are not defined primarily by their attributes. They represent a thread of identity that runs through time and often across distinct representations."*
 > — Evans, Domain-Driven Design, Ch. 5
@@ -95,7 +93,7 @@ public class Order : AggregateRoot<OrderId>
 
 ---
 
-#### Value Objects
+### Value Objects
 
 > *"Many objects have no conceptual identity. These objects describe some characteristic of a thing."*
 > — Evans, Domain-Driven Design, Ch. 5
@@ -132,7 +130,7 @@ public class Money : ValueObject
 
 ---
 
-#### Aggregates
+### Aggregates
 
 > *"Cluster the entities and value objects into aggregates and define boundaries around each. Choose one entity to be the root of each aggregate, and control all access to the objects inside the boundary through the root."*
 > — Evans, Domain-Driven Design, Ch. 6
@@ -188,7 +186,7 @@ public class Order : AggregateRoot<OrderId>
 
 ---
 
-#### Domain Events
+### Domain Events
 
 > *"Model information about activity in the domain as a series of discrete events. Represent each event as a domain object. ... A domain event is a full-fledged part of the domain model, a representation of something that happened in the domain."*
 > — Evans, Domain-Driven Design (2003 edition addendum); also Vernon, IDDD, Ch. 8
@@ -225,7 +223,7 @@ The application layer's unit of work dispatches collected events after the state
 
 ---
 
-#### Repository Pattern
+### Repository Pattern
 
 > *"For each type of object that needs global access, create an object that can provide the illusion of an in-memory collection of all objects of that type."*
 > — Evans, Domain-Driven Design, Ch. 6
@@ -266,7 +264,7 @@ public async Task<Order?> GetByIdAsync(OrderId id, CancellationToken cancellatio
 
 ---
 
-#### Domain Services
+### Domain Services
 
 > *"When a significant process or transformation in the domain is not a natural responsibility of an entity or value object, add an operation to the model as a standalone interface declared as a service."*
 > — Evans, Domain-Driven Design, Ch. 5
@@ -313,7 +311,7 @@ public class OrderConsolidationService : IOrderConsolidationService
 
 ---
 
-#### Specification Pattern
+### Specification Pattern
 
 > *"Create explicit predicate-like value objects for specialized purposes. A specification is a predicate that determines if an object does or does not satisfy some criteria."*
 > — Evans, Domain-Driven Design, Ch. 9
@@ -354,7 +352,7 @@ var orders = await repository.FindAsync(spec);
 
 ---
 
-#### Factory Pattern
+### Factory Pattern
 
 > *"When creation of an entire, internally consistent aggregate, or a large value object, becomes complicated or reveals too much of the internal structure, factories provide encapsulation."*
 > — Evans, Domain-Driven Design, Ch. 6
@@ -410,7 +408,7 @@ public class OrderFactory : IFactory<Order, CreateOrderData>
 
 ---
 
-#### Enumeration Pattern
+### Enumeration Pattern
 
 Evans describes **type-safe status values** as a key tool for eliminating primitive obsession in the domain model. Using raw integers or magic strings for status forces domain logic to be expressed as comparisons against literals scattered throughout the codebase — the meaning lives in the developer's head, not in the model. By replacing them with named types that carry their own behaviour, the status itself becomes a domain concept.
 
@@ -446,7 +444,7 @@ public void Cancel(string reason)
 }
 ```
 
-### Supple Design Patterns
+## Supple Design Patterns
 
 Supple Design is a set of complementary patterns from Evans' Blue Book (Ch. 10) that make a domain model easier to work with safely. Where tactical patterns answer *what* to build, Supple Design answers *how* to shape the code so the model stays expressive and resistant to corruption over time.
 
@@ -454,7 +452,7 @@ Supple Design is a set of complementary patterns from Evans' Blue Book (Ch. 10) 
 
 ---
 
-#### Intention-Revealing Interfaces
+### Intention-Revealing Interfaces
 
 **What:** Name every method and type so the *why* is obvious from the signature alone — no reader should need to look inside to understand what a call means in domain terms.
 
@@ -499,7 +497,7 @@ public bool IsGreaterThanOrEqualTo(Money threshold)
 
 ---
 
-#### Side-Effect-Free Functions
+### Side-Effect-Free Functions
 
 **What:** Separate computation from mutation. Pure functions take inputs, return a result, and change *nothing*. Commands mutate state but delegate all non-trivial calculations to pure functions first.
 
@@ -558,7 +556,7 @@ public Money ApplyDiscount(Percentage d) => new(Amount - d.ApplyTo(Amount), Curr
 
 ---
 
-#### Assertions
+### Assertions
 
 **What:** State postconditions explicitly after every mutation so that the system's guarantees are visible in the code, not just in the developer's head. Use `Debug.Assert` for invariants that *must* hold immediately after a state change — they document what the next reader can count on.
 
@@ -602,7 +600,7 @@ Debug.Assert(!Total.IsZero || discount == itemTotal,
 
 ---
 
-#### Conceptual Contours
+### Conceptual Contours
 
 **What:** Decompose logic at the natural seams of the domain, not at arbitrary technical boundaries. When a concept in the domain has a clear name and meaning, it deserves its own method or type — even if the implementation is a single line.
 
@@ -651,7 +649,7 @@ public void Consolidate(Order sourceOrder, Order targetOrder)
 
 ---
 
-#### Standalone Class
+### Standalone Class
 
 **What:** A class is standalone when it can be fully understood and tested in isolation — it imports nothing from the broader domain model, only primitive types or base classes from a shared kernel.
 
@@ -701,7 +699,7 @@ public class OrderItem : Entity<OrderItemId>
 
 ---
 
-#### Closure of Operations
+### Closure of Operations
 
 **What:** Design operations so that their return type is the same as the types of their arguments — the operation stays "inside" the concept. This allows unlimited chaining without ever crossing a type boundary.
 
@@ -748,7 +746,7 @@ internal Money TotalForQuantity(int quantity) => UnitPrice.Multiply(quantity) - 
 
 ---
 
-## Strategic Design
+# Strategic Design
 
 > *"Strategic design is a set of principles for maintaining model integrity, distillation of the domain model, and working with multiple models."*
 > — Evans, Domain-Driven Design, Ch. 14
@@ -759,7 +757,7 @@ Where tactical design deals with the building blocks inside a single model, stra
 
 ---
 
-### Ubiquitous Language
+## Ubiquitous Language
 
 > *"Use the model as the backbone of a language. Commit the team to exercising that language relentlessly in all communication within the team and in the code. Use the same language in diagrams, writing, and especially speech. Iron out difficulties by experimenting with alternative expressions, which reflect alternative models. Then refactor the code, renaming classes, methods, and modules to conform to the new model. Resolve confusion over terms in conversation, in just the way we come to agree on the meaning of ordinary words."*
 > — Evans, Domain-Driven Design, Ch. 2
@@ -844,7 +842,7 @@ The code becomes a translation problem. Every reader must maintain a mental mapp
 
 ---
 
-### Bounded Contexts
+## Bounded Contexts
 
 > *"A bounded context is a semantic contextual boundary within which each component of the software model has a specific meaning and does specific things."*
 > — Vernon, Domain-Driven Design Distilled, Ch. 2
@@ -921,158 +919,47 @@ Each context lives in its own project set (`Order.*`, `Payment.*`), has its own 
 
 ---
 
-### Context Map: Order ↔ Payment
+## Context Map
 
-A Context Map documents how bounded contexts relate — it makes the integration contracts, team relationships, and translation responsibilities explicit. Evans introduced context maps in Ch. 14; Vernon gives a practical catalogue of the relationship patterns in *IDDD* Ch. 3.
+### Kind of context map
+Ref: Chapter 3, Implementing DDD
 
-The relationship between Order and Payment uses four patterns together:
+What are the relationships between these Bounded Contexts and their individual project teams? There are several DDD organizational and integration patterns, one of which commonly exists between any two Bounded Contexts. Each of the following definitions is largely quoted from [Evans, Ref]:
 
-```
-  Order Service                              Payment Service
-  ┌─────────────────────────────┐            ┌──────────────────────────────┐
-  │  [Open Host Service]        │            │  [Open Host Service]         │
-  │  OrderSubmittedIntegration  │──────────► │  [Anti-Corruption Layer]     │
-  │  Event                      │            │  OrderReference (not OrderId)│
-  │                             │            │                              │
-  │  [Anti-Corruption Layer]    │            │  [Open Host Service]         │
-  │  ExternalOrderTranslator    │◄────────── │  PaymentCompletedIntegration │
-  │                             │            │  Event / PaymentFailed       │
-  └─────────────────────────────┘            └──────────────────────────────┘
-              ◄────────── Partnership ──────────►
-```
+**Partnership:** When teams in two Contexts will succeed or fail together, a cooperative relationship needs to emerge. The teams institute a process for coordinated planning of development and joint management of integration. The teams must cooperate on the evolution of their interfaces to accommodate the development needs of both systems. Interdependent features should be scheduled so that they are completed for the same release.
 
----
+**Shared Kernel:** Sharing part of the model and associated code forms a very intimate interdependency, which can leverage design work or undermine it. Designate with an explicit boundary some subset of the domain model that the teams agree to share. Keep the kernel small. This explicit shared stuff has special status and shouldn't be changed without consultation with the other team. Define a continuous integration process that will keep the kernel model tight and align the Ubiquitous Language (1) of the teams.
 
-#### Open Host Service
+**Customer-Supplier Development:** When two teams are in an upstream/downstream relationship, where the upstream team may succeed independently of the fate of the downstream team, the needs of the downstream team come to be addressed in a variety of ways with a wide range of consequences. Downstream priorities factor into upstream planning. Negotiate and budget tasks for downstream requirements so that everyone understands the commitment and schedule.
 
-> *"Define a protocol that gives access to your subsystem as a set of services. Open the protocol so that all who need to integrate with you can use it."*
-> — Evans, Domain-Driven Design, Ch. 14
+**Conformist:** When two development teams have an upstream/downstream relationship in which the upstream team has no motivation to provide for the downstream team's needs, the downstream team is helpless. Altruism may motivate upstream developers to make promises, but they are unlikely to be fulfilled. The downstream team eliminates the complexity of translation between bounded contexts by slavishly adhering to the model of the upstream team.
 
-An Open Host Service (OHS) exposes a bounded context's capabilities through a well-defined, stable protocol. Any consumer can integrate with it without requiring a custom translation built by the provider. When the protocol is formally documented so consumers can use it independently, that document is the Published Language.
+**Anticorruption Layer:** Translation layers can be simple, even elegant, when bridging well-designed Bounded Contexts with cooperative teams. But when control or communication is not adequate to pull off a shared kernel, partner, or customer-supplier relationship, translation becomes more complex. The translation layer takes on a more defensive tone. As a downstream client, create an isolating layer to provide your system with functionality of the upstream system in terms of your own domain model. This layer talks to the other system through its existing interface, requiring little or no modification to the other system. Internally, the layer translates in one or both directions as necessary between the two models.
 
-**Both services act as Open Host Services** — each opens its domain to other contexts by publishing integration events on a shared bus. There is no custom point-to-point connector; any service that subscribes to the event schema can consume it.
+**Open Host Service:** Define a protocol that gives access to your subsystem as a set of services. Open the protocol so that all who need to integrate with you can use it. Enhance and expand the protocol to handle new integration requirements, except when a single team has idiosyncratic needs. Then, use a one-off translator to augment the protocol for that special case so that the shared protocol can stay simple and coherent.
 
-**Order service** hosts:
-```csharp
-// Order.IntegrationEvents/OrderSubmittedIntegrationEvent.cs
-public record OrderSubmittedIntegrationEvent(
-    Guid OrderId,
-    Guid CustomerId,
-    decimal TotalAmount,
-    string Currency) : IntegrationEvent;
-```
+**Published Language:** The translation between the models of two Bounded Contexts requires a common language. Use a well-documented shared language that can express the necessary domain information as a common medium of communication, translating as necessary into and out of that language. Published Language is often combined with Open Host Service.
 
-**Payment service** hosts:
-```csharp
-// Payment.IntegrationEvents/PaymentCompletedIntegrationEvent.cs
-public record PaymentCompletedIntegrationEvent(
-    Guid PaymentId,
-    Guid OrderId,
-    decimal Amount,
-    DateTime CompletedAt) : IntegrationEvent;
+**Separate Ways:** We must be ruthless when it comes to defining requirements. If two sets of functionality have no significant relationship, they can be completely cut loose from each other. Integration is always expensive, and sometimes the benefit is small. Declare a bounded context to have no connection to the others at all, enabling developers to find simple, specialized solutions within this small scope.
 
-// Payment.IntegrationEvents/PaymentFailedIntegrationEvent.cs
-public record PaymentFailedIntegrationEvent(
-    Guid PaymentId,
-    Guid OrderId,
-    string Reason) : IntegrationEvent;
-```
+**Big Ball of Mud:** As we survey existing systems, we find that, in fact, there are parts of systems, often large ones, where models are mixed and boundaries are inconsistent. Draw a boundary around the entire mess and designate it a Big Ball of Mud. Do not try to apply sophisticated modeling within this Context. Be alert to the tendency for such systems to sprawl into other Contexts.
 
----
+### Context map between Order and Payment
 
-#### Published Language
+The integration between Order and Payment are a combination of the following context map patterns:  
+- Open Host Service
+- Published Language
+- Anti-Corruption Layer
 
-> *"Use a well-documented shared language that can express the necessary domain information as a common medium of communication, translating as necessary into and out of that language."*
-> — Evans, Domain-Driven Design, Ch. 14
+The following is from Vaghn Verson (Implementing DDD, Chapter 3, page 100):  
 
-The Published Language is the formal schema that the Open Host Service exposes. Evans pairs OHS and Published Language together — OHS is the *protocol* (how you access it), Published Language is the *format* (what you send and receive). Consumers translate from the published language into their own model; the provider never needs to know which consumers exist or how many there are.
+![Context Map](docs/context-map.jpg)
 
-In this codebase each service owns a dedicated integration events project that acts as its published language:
+**Open Host Service:** This pattern can be implemented as REST-based resources that client Bounded Contexts interact with. We generally think of Open Host Service as a remote procedure call (RPC) API, but it can be implemented using message exchange.
 
-```
-Order.IntegrationEvents/
-  OrderSubmittedIntegrationEvent.cs   ← published language consumed by Payment
+**Published Language:** This can be implemented in a few different ways but is many times done as an XML schema. When expressed with REST-based services, the Published Language is rendered as representations of domain concepts. Representations may include both XML and JSON, for example. It is also possible to render representations as Google Protocol Buffers. If you are publishing Web user interfaces, it might also include HTML representations. One advantage to using REST is that each client can specify its preferred Published Language, and the resources render representations in the requested content type. REST also has the advantage of producing hypermedia representations, which facilitates HATEOAS. Hypermedia makes a Published Language very dynamic and interactive, enabling clients to navigate to sets of linked resources. The Language may be published using standard and/or custom media types. A Published Language is also used in an Event-Driven Architecture (4), where Domain Events (8) are delivered as messages to subscribing interested parties.
 
-Payment.IntegrationEvents/
-  PaymentCompletedIntegrationEvent.cs ← published language consumed by Order
-  PaymentFailedIntegrationEvent.cs    ← published language consumed by Order
-```
-
-Neither payload leaks internal domain types (`OrderId`, `Money`, `OrderStatus`). They carry only primitives — `Guid`, `decimal`, `string`, `DateTime` — so consumers are never forced to take a dependency on the provider's domain model.
-
----
-
-#### Anti-Corruption Layer
-
-> *"Create an isolating layer to provide clients with functionality in terms of their own domain model. The layer talks to the other system through its existing interface, requiring little or no modification to the other system. Internally, the layer translates in both directions as necessary between the two models."*
-> — Evans, Domain-Driven Design, Ch. 14
-
-An Anti-Corruption Layer (ACL) protects a bounded context's internal model from being polluted by the concepts of another context. Without it, a downstream context gradually conforms to its upstream neighbour's model — importing its types, its naming, its assumptions. The ACL translates at the boundary so the internal model stays pure.
-
-**Payment's ACL — identity value objects:**
-
-Rather than importing `OrderId` from the Order domain, Payment defines its own `OrderReference` and `CustomerReference`. The ACL translates the raw `Guid` from the integration event into Payment's local concept:
-
-```csharp
-// Payment.Domain/ValueObjects/Identifiers.cs
-// Payment's own concept — not Order's OrderId
-public class OrderReference : ValueObject
-{
-    public Guid Value { get; }
-    public static OrderReference From(Guid value) => new(value);
-}
-
-// Payment.Infrastructure/IntegrationEventHandlers
-// Translation happens at the boundary — the ACL
-var payment = Payment.CreateForOrder(
-    OrderReference.From(integrationEvent.OrderId),   // Guid → Payment's OrderReference
-    CustomerReference.From(integrationEvent.CustomerId),
-    new Money(integrationEvent.TotalAmount, integrationEvent.Currency),
-    PaymentMethod.CreditCard);
-```
-
-**Order's ACL — ExternalOrderTranslator:**
-
-The `ExternalOrderTranslator` in `Order.Application/AntiCorruption/` translates external order representations (e.g. imported from a legacy or external system) into Order's own aggregate, preventing any foreign model from entering the domain layer:
-
-```csharp
-// Order.Application/AntiCorruption/ExternalOrderTranslator.cs
-public class ExternalOrderTranslator
-{
-    public Order Translate(ExternalOrderData externalOrder)
-    {
-        // translates external concepts → Order domain model
-        // no external type escapes past this boundary
-    }
-}
-```
-
----
-
-#### Partnership
-
-> *"When teams in two contexts will succeed or fail together, they have a cooperative relationship. ... They must plan their development schedules together so that their work is coordinated."*
-> — Evans, Domain-Driven Design, Ch. 14
-
-A Partnership exists when two bounded contexts have a mutual dependency — neither is permanently upstream or downstream. Changes in either context's published language require coordination between both teams.
-
-The Order ↔ Payment relationship is a Partnership because the event flow is bidirectional:
-
-- **Order → Payment**: Order publishes `OrderSubmittedIntegrationEvent`; Payment depends on it to create a payment
-- **Payment → Order**: Payment publishes `PaymentCompletedIntegrationEvent` / `PaymentFailedIntegrationEvent`; Order depends on them to mark the order as paid or failed
-
-```
-Order is upstream  ──OrderSubmitted──►  Payment is downstream
-Order is downstream ◄──PaymentCompleted──  Payment is upstream
-```
-
-Neither can evolve its published language independently. A change to the `OrderSubmittedIntegrationEvent` schema breaks the Payment service; a change to `PaymentCompletedIntegrationEvent` breaks the Order service. Both teams must plan releases and schema evolution together.
-
----
-
-#### Event Flow
-
-The complete integration sequence showing all four patterns working together:
+**Anticorruption Layer:** A Domain Service (7) can be defined in the downstream Context for each type of Anticorruption Layer. You may also put an Anticorruption Layer behind a Repository (12) interface. If using REST, a client Domain Service implementation accesses a remote Open Host Service. Server responses produce representations as a Published Language. The downstream Anticorruption Layer translates representations into domain objects of its local Context. This is where, for example, the Collaboration Context asks the Identity and Access Context for a User-in-Moderator-role resource. It might receive the requested resource as XML or JSON, and then translates to a Moderator, which is a Value Object. The new Moderator instance reflects a concept in terms of the downstream model, not the upstream model.   
 
 ```
 Order Service                    Event Bus              Payment Service
@@ -1098,11 +985,85 @@ OrderSubmittedIntegrationEvent ────────────────�
 Status = Paid
 ```
 
-**Summary of patterns per role:**
+**In this codebase** — `ExternalOrderTranslator` is another the canonical ACL. An external system submits orders in its own format (`ExternalOrderDto`) with no obligation to speak the Order domain language — it uses flat string fields for addresses, raw `decimal` for prices, and its own naming conventions. The translator converts that foreign data entirely into Order's own value objects before anything crosses into the domain:
 
-| Service | Role as Producer | Role as Consumer |
-|---|---|---|
-| Order | Open Host Service + Published Language | Anti-Corruption Layer |
-| Payment | Open Host Service + Published Language | Anti-Corruption Layer |
+```csharp
+// Order.Application/AntiCorruption/ExternalOrderTranslator.cs
+public class ExternalOrderTranslator : IExternalOrderTranslator
+{
+    public CreateOrderData Translate(ExternalOrderDto external)
+    {
+        var customerId      = CustomerId.From(external.CustomerId);
+        var shippingAddress = new Address(
+            external.ShippingStreet, external.ShippingCity,
+            external.ShippingState,  external.ShippingCountry, external.ShippingZipCode);
 
+        var items = external.Items.Select(item => new OrderItemData(
+            ProductId:   ProductId.From(item.ProductId),
+            ProductName: item.ProductName,
+            UnitPrice:   new Money(item.UnitPrice, external.Currency),
+            Quantity:    item.Quantity
+        )).ToList();
+
+        return new CreateOrderData(customerId, shippingAddress, external.Currency, items, external.Notes);
+    }
+}
+```
+
+The interface (`IExternalOrderTranslator`) lives in `Order.Application.AntiCorruption` — the ACL is an explicit architectural boundary, not a utility buried in infrastructure. If the external system renames a field or changes its address structure, only the translator changes. The domain model is untouched.  
+
+### Payment and Order as Customer-Supplier
+
+In the Customer-Supplier pattern, the downstream context (the **customer**) defines the interface — not the upstream context (the **supplier**). This is the critical distinction from a Conformist relationship, where the downstream slavishly adopts the upstream's model. Here, the downstream negotiates: *"I need this specific data in this specific shape, and you commit to providing it."* The upstream's obligation is explicit and versioned in code.
+
+In this codebase, Payment needs the customer's email and billing address to call the payment gateway. Order owns the `Customer` aggregate. Payment is the customer (downstream); Order is the supplier (upstream).
+
+**The interface lives in `Payment.Contracts` — owned by the customer:**
+
+```csharp
+// Payment.Contracts/ICustomerInfoProvider.cs
+// Payment declares exactly what it needs. Order has no say in this shape.
+public interface ICustomerInfoProvider
+{
+    Task<CustomerInfo?> GetCustomerInfoAsync(Guid customerId, CancellationToken ct = default);
+}
+
+public record CustomerInfo(Guid CustomerId, string FullName, string Email, BillingAddress BillingAddress);
+public record BillingAddress(string Street, string City, string State, string Country, string ZipCode);
+```
+
+`CustomerInfo` contains only the fields Payment needs — email for the receipt, billing address for the gateway. The `Customer` aggregate in Order also carries an order history, registration date, and other fields Payment has no use for. Payment does not see them. The shape of `CustomerInfo` is a design decision made entirely by the Payment team.
+
+**The implementation lives in `Order.Contracts` — published by the supplier:**
+
+```csharp
+// Order.Contracts/CustomerInfoProvider.cs
+// Order adapts its Customer aggregate to the shape Payment declared it needs.
+public class CustomerInfoProvider(ICustomerRepository customerRepository) : ICustomerInfoProvider
+{
+    public async Task<CustomerInfo?> GetCustomerInfoAsync(Guid customerId, CancellationToken ct = default)
+    {
+        var customer = await customerRepository.GetByIdAsync(CustomerId.From(customerId), ct);
+        if (customer is null) return null;
+
+        return new CustomerInfo(
+            customer.Id.Value,
+            customer.FullName,
+            customer.Email.Value,
+            new BillingAddress(
+                customer.BillingAddress.Street, customer.BillingAddress.City,
+                customer.BillingAddress.State,  customer.BillingAddress.Country,
+                customer.BillingAddress.ZipCode));
+    }
+}
+```
+
+Order adapts its own `Customer` aggregate to the shape Payment declared. If Order later renames `BillingAddress` to `PostalAddress`, only `CustomerInfoProvider` changes — the `ICustomerInfoProvider` contract and Payment's code are untouched.
+
+```
+Payment.Contracts          defines  ICustomerInfoProvider  ◄──── owns the contract
+     ▲
+     │  (Order takes a dependency on Payment's contract)
+Order.Contracts            publishes CustomerInfoProvider       implements the contract
+```
 
