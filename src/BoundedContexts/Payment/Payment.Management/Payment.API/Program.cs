@@ -2,7 +2,7 @@ using BuildingBlocks.Integration;
 using MongoDB.Driver;
 using Order.Contracts;
 using Order.Contracts.IntegrationEvents;
-using Payment.Application.Handlers;
+using Payment.Application.Commands;
 using Payment.Application.IntegrationEventHandlers;
 using Payment.Application.Services;
 using Payment.Contracts;
