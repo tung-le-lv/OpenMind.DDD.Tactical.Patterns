@@ -88,6 +88,7 @@ public class CustomerId : ValueObject
         Value = value;
     }
 
+    public static CustomerId New() => new(Guid.NewGuid());
     public static CustomerId From(Guid value) => new(value);
 
     protected override IEnumerable<object?> GetEqualityComponents()

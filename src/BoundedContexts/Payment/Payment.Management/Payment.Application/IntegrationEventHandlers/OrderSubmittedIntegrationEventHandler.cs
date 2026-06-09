@@ -40,8 +40,6 @@ public class OrderSubmittedIntegrationEventHandler(
 
         await mediator.Send(new ProcessPaymentCommand(paymentId), cancellationToken);
 
-        await mediator.Send(new CompletePaymentCommand(paymentId, $"TXN-{Guid.NewGuid():N}"), cancellationToken);
-
-        logger.LogInformation("Payment {PaymentId} processed and completed", paymentId);
+        logger.LogInformation("Payment {PaymentId} processed", paymentId);
     }
 }

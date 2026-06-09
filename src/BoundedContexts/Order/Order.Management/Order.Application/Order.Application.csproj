@@ -16,7 +16,6 @@
     <ProjectReference Include="..\Order.Domain\Order.Domain.csproj" />
     <ProjectReference Include="..\..\Order.Contracts\Order.Contracts.csproj" />
     <ProjectReference Include="..\..\..\..\BuildingBlocks\DDD.BuildingBlocks.Integration\DDD.BuildingBlocks.Integration.csproj" />
-    <ProjectReference Include="..\..\..\Payment\Payment.Contracts\Payment.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,13 +3,13 @@ using MongoDB.Driver;
 using Order.Application.AntiCorruption;
 using Order.Application.Commands;
 using Order.Application.IntegrationEventHandlers;
-using Order.Application.Services;
 using Order.Contracts;
 using Order.Domain.Repositories;
 using Order.Domain.Services;
 using Order.Infrastructure.Messaging;
 using Order.Infrastructure.Persistence;
 using Order.Infrastructure.Repositories;
+using Payment.Contracts;
 using Payment.Contracts.IntegrationEvents;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,9 +31,10 @@ builder.Services.AddMediatR(cfg =>
 // Repository
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
-// Customer-Supplier: Order exposes IOrderDataProvider so its own services
-// (and in-process consumers like tests) can resolve it without re-wiring.
-builder.Services.AddScoped<IOrderDataProvider, OrderDataProvider>();
+// Customer-Supplier (customer-defined contract): Order (supplier) registers its
+// CustomerInfoProvider so the Payment BC can resolve ICustomerInfoProvider.
+// ICustomerRepository needs a concrete infrastructure implementation.
+builder.Services.AddScoped<ICustomerInfoProvider, CustomerInfoProvider>();
 
 // Domain Services
 builder.Services.AddScoped<IOrderConsolidationService, OrderConsolidationService>();

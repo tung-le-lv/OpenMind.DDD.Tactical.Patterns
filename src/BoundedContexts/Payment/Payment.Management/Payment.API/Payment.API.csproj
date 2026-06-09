@@ -15,8 +15,6 @@
     <ProjectReference Include="..\Payment.Application\Payment.Application.csproj" />
     <ProjectReference Include="..\Payment.Infrastructure\Payment.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\Order\Order.Contracts\Order.Contracts.csproj" />
-    <ProjectReference Include="..\..\..\Order\Order.Management\Order.Application\Order.Application.csproj" />
-    <ProjectReference Include="..\..\..\Order\Order.Management\Order.Infrastructure\Order.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
