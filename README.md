@@ -31,6 +31,14 @@ Evans mapped this directly onto domain modeling. Strategic design covers the sys
 - [Strategic Design](#strategic-design)
   - [Ubiquitous Language](#ubiquitous-language)
   - [Bounded Contexts](#bounded-contexts)
+    - [How to identify bounded context?](#how-to-indentify-bounded-context)
+      - [Aligning with Subdomains](#aligning-with-subdomains-problem-space-vs-solution-space)
+      - [Tracking an Object's Life Cycle Stages](#tracking-an-objects-life-cycle-stages)
+      - [Departmental and Work Group Divisions](#departmental-and-work-group-divisions)
+      - [Using Event Storming](#using-event-storming)
+    - [The same real-world thing, modelled differently in each context](#the-same-real-world-thing-modelled-differently-in-each-context)
+    - [What happens without bounded contexts — the god class](#what-happens-without-bounded-contexts--the-god-class)
+    - [Why bounded contexts exist — the god class and the Big Ball of Mud](#why-bounded-contexts-exist--the-god-class-and-the-big-ball-of-mud)
   - [Context Map](#context-map)
     - [Kind of context map](#kind-of-context-map)
     - [Context map between Order and Payment](#context-map-between-order-and-payment)
@@ -849,7 +857,34 @@ The code becomes a translation problem. Every reader must maintain a mental mapp
 
 A Bounded Context is an explicit boundary within which a domain model applies. Inside the boundary every term in the ubiquitous language has one precise meaning. The same word used in two different bounded contexts may mean something entirely different — `Money` in the Order context supports arithmetic for building totals (`Multiply`, `ApplyDiscount`), while `Money` in the Payment context supports charging semantics (`IsChargeable`, `ToMinorUnits`). Same word, different model, different operations — because each context owns its own meaning of "money".
 
-**The same real-world thing, modelled differently in each context.**
+### How to indentify bounded context?
+
+#### Aligning with Subdomains (Problem Space vs. Solution Space)
+
+Vernon emphasizes identifying Bounded Contexts by first analyzing your business's "problem space". You do this by breaking the entire business domain down into logical **Subdomains** (Core, Supporting, and Generic). Once you have mapped out these Subdomains, they guide your "solution space" (the software implementation). In an ideal DDD scenario, **you should strive to align one Bounded Context one-to-one (1:1) with a single Subdomain**.
+
+#### Tracking an Object's Life Cycle Stages
+
+If a core business concept goes through drastically different phases where different people care about completely different properties, each stage might warrant its own Bounded Context. For example, in a publishing company, a "Book" goes through conceptualization, editing, page layout, marketing, and shipping. Trying to build a single "Book" model to handle all of these stages would cause massive confusion. Instead, you should create separate Bounded Contexts for each major life cycle stage, where the "Book" means exactly what that specific team requires it to mean.
+
+#### Departmental and Work Group Divisions
+
+Boundaries frequently align with the physical or organizational divisions of the business itself. If your business is divided into distinct departments (e.g., Underwriting, Claims, and Inspections), you will typically find at least one domain expert per business function. These departmental lines are strong indicators of where a Bounded Context boundary should exist.
+
+#### Using Event Storming
+
+You can actively discover Bounded Context boundaries by conducting an **Event Storming** session. As you map out business events on a timeline using sticky notes, boundaries will naturally emerge on the modeling surface. You will likely notice a natural boundary when the flow of events crosses departmental divisions, when business people start arguing over the definition of a term, or when a concept clearly steps outside the Core Domain you are focusing on.
+
+### The same real-world thing, modelled differently in each context
+
+My favorite approach is "Tracking an Object's Life Cycle Stages", which is reflected in this source code.
+
+An Order goes through three major life cycle stages:
+- Order Creation and placement
+- Payment
+- Delivery
+
+Each stage is modeled as a different aggregate: Order → Payment → Delivery. Each aggregate is actually a representation of the Order within its own dedicated bounded context.
 
 A customer purchase is a single real-world event, but each bounded context models it through its own lens — capturing only the aspects that are relevant to its own work and ignoring everything else.
 
@@ -862,7 +897,7 @@ In this codebase, the `Payment` aggregate in the Payment context is the payment-
 
 Each context owns a complete, self-sufficient model of the parts of the domain it is responsible for. The same underlying concept — a purchase by a customer — is described in richer or simpler terms depending on what each context needs to do with it. Evans calls this *model isolation*: the goal is not to build one universal model of everything, but to build the right model for each context.
 
-**What happens without bounded contexts — the god class.**
+### What happens without bounded contexts — the god class
 
 Without explicit boundaries, the natural pressure is to keep adding to one central model until it carries everything. The `Order` class becomes the universal fact about a purchase — shopping concerns, payment concerns, shipping concerns, all in one place:
 
@@ -900,7 +935,7 @@ public class Order
 
 The bounded context solution is not to split the class arbitrarily — it is to recognise that order management and payment processing are genuinely different domains with different experts, different invariants, and different rates of change, and to give each its own model that speaks its own language cleanly.
 
-**Why bounded contexts exist — the god class and the Big Ball of Mud.**
+### Why bounded contexts exist — the god class and the Big Ball of Mud
 
 Without explicit boundaries, every new feature gets added to the existing model rather than asking *"does this belong here?"*. The model grows without friction — a payment field here, a shipping rule there — and each addition seems reasonable in isolation. The god class above is how this manifests at the class level. At the system level, Vernon calls the end result a Big Ball of Mud (*DDD Distilled*, Ch. 2): a domain model that has lost the integrity of its ubiquitous language because it is trying to mean too many things to too many people. Nobody makes a conscious decision to build a mess. The mess is the result of the absence of a deliberate decision about where the boundary sits.
 
