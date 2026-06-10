@@ -995,6 +995,8 @@ The following is from Vaghn Verson (Implementing DDD, Chapter 3, page 100):
 
 **Anticorruption Layer:** A Domain Service (7) can be defined in the downstream Context for each type of Anticorruption Layer. You may also put an Anticorruption Layer behind a Repository (12) interface. If using REST, a client Domain Service implementation accesses a remote Open Host Service. Server responses produce representations as a Published Language. The downstream Anticorruption Layer translates representations into domain objects of its local Context. This is where, for example, the Collaboration Context asks the Identity and Access Context for a User-in-Moderator-role resource. It might receive the requested resource as XML or JSON, and then translates to a Moderator, which is a Value Object. The new Moderator instance reflects a concept in terms of the downstream model, not the upstream model.   
 
+**In this codebase**, this is the badic flow of context map between Order and Payment service.
+
 ```
 Order Service                    Event Bus              Payment Service
 ─────────────────                ─────────              ───────────────────
@@ -1019,7 +1021,7 @@ OrderSubmittedIntegrationEvent ────────────────�
 Status = Paid
 ```
 
-**In this codebase** — `ExternalOrderTranslator` is another the canonical ACL. An external system submits orders in its own format (`ExternalOrderDto`) with no obligation to speak the Order domain language — it uses flat string fields for addresses, raw `decimal` for prices, and its own naming conventions. The translator converts that foreign data entirely into Order's own value objects before anything crosses into the domain:
+Regarding ACL, `ExternalOrderTranslator` is a canonical ACL. An external system submits orders in its own format (`ExternalOrderDto`) with no obligation to speak the Order domain language — it uses flat string fields for addresses, raw `decimal` for prices, and its own naming conventions. The translator converts that foreign data entirely into Order's own value objects before anything crosses into the domain:
 
 ```csharp
 // Order.Application/AntiCorruption/ExternalOrderTranslator.cs
