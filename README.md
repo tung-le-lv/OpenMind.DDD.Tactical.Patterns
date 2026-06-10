@@ -1,4 +1,4 @@
-# Demonstrate DDD strategic and tactical design patterns    
+# Demonstrating DDD Strategic and Tactical Design Patterns      
 
 Why calling it strategic and tactical design?  
 
