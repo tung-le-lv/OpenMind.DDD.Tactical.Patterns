@@ -23,7 +23,7 @@ services:
   order-api:
     build:
       context: .
-      dockerfile: src/BoundedContexts/Order/Order.API/Dockerfile
+      dockerfile: src/BoundedContexts/Order/Order.Management/Order.API/Dockerfile
     container_name: ddd-order-api
     profiles: ["all"]
     ports:
@@ -38,10 +38,28 @@ services:
     networks:
       - ddd-network
 
+  order-search-api:
+    build:
+      context: .
+      dockerfile: src/BoundedContexts/Order/Order.Search/Dockerfile
+    container_name: ddd-order-search-api
+    profiles: ["all"]
+    ports:
+      - "5003:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDB__ConnectionString=mongodb://mongodb:27017
+      - MongoDB__DatabaseName=OrderDb
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ddd-network
+
   payment-api:
     build:
       context: .
-      dockerfile: src/BoundedContexts/Payment/Payment.API/Dockerfile
+      dockerfile: src/BoundedContexts/Payment/Payment.Management/Payment.API/Dockerfile
     container_name: ddd-payment-api
     profiles: ["all"]
     ports:
