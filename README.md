@@ -1,5 +1,4 @@
-# Domain-Driven Design
-Demonstrate DDD strategic and tactical design.  
+# Demonstrating DDD Strategic and Tactical Design Patterns      
 
 Why calling it strategic and tactical design?  
 
